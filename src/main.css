@@ -1,0 +1,15 @@
+* {
+	box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+	min-height: 100%;
+}
+
+body {
+	margin: 0;
+	background: radial-gradient( #111111, #0b0b0b);
+	color: #ffffff;
+}
