@@ -1,7 +1,9 @@
-import {Button, TextField, Box} from '@mui/material';
+import { Button, TextField, Box, Typography } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 export const LoginPage = () => {
 	const borderRadius="10px"
+	const navigate = useNavigate();
 	return (
 		<>
 			<Box component="form" sx={{display: "flex", flexDirection: "column", gap: 2}}>
@@ -18,10 +20,12 @@ export const LoginPage = () => {
 					sx={{ backgroundColor: '#f5f5f5', borderRadius: borderRadius}}
 				/>
 			</Box>
-			<p>¿Olvidaste tu contraseña?<a src="" target='_blank'>Recuperar contraseña aquí</a></p>
+			<Typography variant="body2" sx={{ textAlign: 'center' }}>
+  				¿Olvidaste tu contraseña? <span style={{ color: 'blue', cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/forgot-password')}>Recuperar contraseña aquí</span>
+			</Typography>
 			<Button variant="contained">Ingresar</Button>
 			<p>¿No tenés cuenta?</p>
-			<Button variant="outlined">Registarse</Button>
+			<Button variant="outlined" onClick={() => navigate('/register')}>Registrarse</Button>
 		</>
 	)
 }
