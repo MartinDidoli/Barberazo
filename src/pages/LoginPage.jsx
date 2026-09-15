@@ -23,7 +23,7 @@ export const LoginPage = () => {
 			<Typography variant="body2" sx={{ textAlign: 'center' }}>
   				¿Olvidaste tu contraseña? <span style={{ color: 'blue', cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/forgot-password')}>Recuperar contraseña aquí</span>
 			</Typography>
-			<Button variant="contained">Ingresar</Button>
+			<Button variant="contained" onClick={() => navigate('/home')}>Ingresar</Button>
 			<p>¿No tenés cuenta?</p>
 			<Button variant="outlined" onClick={() => navigate('/register')}>Registrarse</Button>
 		</>
