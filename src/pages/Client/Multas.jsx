@@ -1,6 +1,8 @@
 import {Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Avatar, Chip} from '@mui/material'
 import { useNavigate } from "react-router-dom";
 
+import Navbar from '../../components/navbar/Navbar';
+
 export const Multas = () => {
     const navigate = useNavigate();
     const ejemploMultas = [
@@ -11,7 +13,6 @@ export const Multas = () => {
     return (
         <>
             <h1>Multas</h1>
-            {/* tabla multas con botones fuera a la derecha */}
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
                 <TableContainer component={Paper} sx={{ flex: 1 }}>
                     <Table sx={{ minWidth: 650 }} aria-label="simple table">
@@ -34,7 +35,6 @@ export const Multas = () => {
                     </Table>
                 </TableContainer>
 
-                {/* botones alineados a la derecha, solo para filas 'Pendiente' (fuera de la tabla) */}
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-end' }}>
                     {ejemploMultas.map((multa) => (
                         <Box key={multa.id} sx={{ width: '140px' }}>
