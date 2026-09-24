@@ -1,7 +1,6 @@
-import {Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Avatar, Chip} from '@mui/material'
+import {Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button} from '@mui/material';
 import { useNavigate } from "react-router-dom";
 
-import Navbar from '../../components/navbar/Navbar';
 
 export const Multas = () => {
     const navigate = useNavigate();
