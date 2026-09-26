@@ -32,7 +32,7 @@ export const HomeStaff = () => {
           )}
           
           {/* Clientes y Reseñas lo ven ambos */}
-          <Button variant="outlined" sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}>CLIENTES</Button>
+          <Button variant="outlined" sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }} onClick={() => navigate('/clientes-dueno')}>CLIENTES</Button>
           <Button variant="outlined" sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}>RESEÑAS</Button>
           
         </Box>
