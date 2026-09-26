@@ -25,7 +25,7 @@ export const HomeStaff = () => {
           {/* Renderizado condicional: Solo si es dueño ve Servicios, Fechas y Empleados */}
           {rolUsuario === 'dueño' && (
             <>
-              <Button variant="outlined" sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}>SERVICIOS</Button>
+              <Button variant="outlined" sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }} onClick={() => navigate('/servicios-dueno')}>SERVICIOS</Button>
               <Button variant="outlined" sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }} onClick={() => navigate('/habilitar-fecha')}>NUEVAS FECHAS</Button>
               <Button variant="outlined" sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}>EMPLEADOS</Button>
             </>
