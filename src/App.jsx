@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { LandingPage } from "./pages/LandingPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { HomeStaff } from './pages/Home/HomeStaff';
+import { HabilitarFecha } from './pages/Owner/HabilitarFecha';
 import { LoginPage } from "./pages/LoginPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
@@ -28,6 +29,7 @@ const App = () => {
           ></Route>
           <Route path="/reset-password" element={<ResetPasswordPage />}></Route>
           <Route path="/home-staff" element={ < HomeStaff /> }></Route>
+          <Route path="/habilitar-fecha" element={< HabilitarFecha />}></Route>
           <Route path="/home" element={<Home />}></Route>
           <Route path="/appointments" element={<Appointments />}></Route>
           <Route path="/add-review" element={<AddReview />}></Route>
