@@ -27,7 +27,7 @@ export const HomeStaff = () => {
             <>
               <Button variant="outlined" sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }} onClick={() => navigate('/servicios-dueno')}>SERVICIOS</Button>
               <Button variant="outlined" sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }} onClick={() => navigate('/habilitar-fecha')}>NUEVAS FECHAS</Button>
-              <Button variant="outlined" sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}>EMPLEADOS</Button>
+              <Button variant="outlined" sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }} onClick={() => navigate('/empleados-dueno')}>EMPLEADOS</Button>
             </>
           )}
           

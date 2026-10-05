@@ -8,6 +8,8 @@ import { HabilitarFecha } from './pages/Owner/HabilitarFecha';
 import { LoginPage } from "./pages/LoginPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ServiciosDueno } from './pages/Owner/ServiciosDueno';
+import { EmpleadosDueno } from './pages/Owner/EmpleadosDueno';
+import { NewEmployee } from './pages/Owner/CreateEmployee';
 import {CreateService} from './pages/Owner/CreateService'
 import {Reviews} from './pages/Owner/Reviews'
 import { ClientesDueno } from './pages/Owner/ClientesDueno';
@@ -32,13 +34,14 @@ const App = () => {
             element={<ForgotPasswordPage />}
           ></Route>
           <Route path="/reset-password" element={<ResetPasswordPage />}></Route>
+          <Route path="/empleados-dueno/newEmployee" element={<NewEmployee />}></Route>
           <Route path="/home-staff" element={ < HomeStaff /> }></Route>
           <Route path="/habilitar-fecha" element={< HabilitarFecha />}></Route>
           <Route path="/clientes-dueno" element={< ClientesDueno />}></Route>
           <Route path="/servicios-dueno" element={< ServiciosDueno />}></Route>
           <Route path="/servicios-dueno/newService" element={<CreateService/>}></Route>
           <Route path="/reviews" element={<Reviews/>}></Route>
-        
+          <Route path="/empleados-dueno" element={<EmpleadosDueno />}></Route>
           <Route path="/home" element={<Home />}></Route>
           <Route path="/appointments" element={<Appointments />}></Route>
           <Route path="/add-review" element={<AddReview />}></Route>
