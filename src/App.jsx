@@ -8,6 +8,8 @@ import { HabilitarFecha } from './pages/Owner/HabilitarFecha';
 import { LoginPage } from "./pages/LoginPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ServiciosDueno } from './pages/Owner/ServiciosDueno';
+import {CreateService} from './pages/Owner/CreateService'
+import {Reviews} from './pages/Owner/Reviews'
 import { ClientesDueno } from './pages/Owner/ClientesDueno';
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { Home } from "./pages/Home/Home";
@@ -34,12 +36,14 @@ const App = () => {
           <Route path="/habilitar-fecha" element={< HabilitarFecha />}></Route>
           <Route path="/clientes-dueno" element={< ClientesDueno />}></Route>
           <Route path="/servicios-dueno" element={< ServiciosDueno />}></Route>
+          <Route path="/servicios-dueno/newService" element={<CreateService/>}></Route>
+          <Route path="/reviews" element={<Reviews/>}></Route>
+        
           <Route path="/home" element={<Home />}></Route>
           <Route path="/appointments" element={<Appointments />}></Route>
           <Route path="/add-review" element={<AddReview />}></Route>
           <Route path="/profile" element={<Profile />}></Route>
           <Route path="/Multas" element={<Multas />}></Route>
-
         </Routes>
       </Router>
     </>

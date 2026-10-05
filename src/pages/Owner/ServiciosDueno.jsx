@@ -61,7 +61,7 @@ export const ServiciosDueno = () => {
               <Button 
                 variant="contained" 
                 color="success" 
-                onClick={() => alert('Redirige a EDITAR SERVICIO (CUU 7.2)')}
+                onClick={() => navigate('/servicios-dueno/newService')} /* Este va a llevar el id, para que modifique */
                 sx={{ borderRadius: 0, fontWeight: 'bold' }}
               >
                 Editar
@@ -83,7 +83,7 @@ export const ServiciosDueno = () => {
           <Button 
             variant="contained" 
             sx={{ backgroundColor: '#0056b3', fontWeight: 'bold', padding: '10px 30px' }}
-            onClick={() => alert('Redirige a CREAR SERVICIO (CUU 7.1)')}
+            onClick={() => navigate('/servicios-dueno/newService')}
           >
             CREAR NUEVO SERVICIO
           </Button>
