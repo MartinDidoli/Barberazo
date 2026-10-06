@@ -1,4 +1,5 @@
-// import { useState } from 'react'
+import { ThemeProvider, CssBaseline } from "@mui/material";
+import { theme } from "./theme";
 import Navbar from "./components/navbar/Navbar";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { LandingPage } from "./pages/LandingPage";
@@ -22,7 +23,8 @@ import { Multas } from './pages/Client/Multas';
 
 const App = () => {
   return (
-    <>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
       <Router>
         <Navbar />
         <Routes>
@@ -49,7 +51,7 @@ const App = () => {
           <Route path="/Multas" element={<Multas />}></Route>
         </Routes>
       </Router>
-    </>
+    </ThemeProvider>
   );
 };
 
