@@ -10,6 +10,7 @@ import {
   Alert,
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
+import { mockStore } from "../../services/mockStore";
 
 const labels = {
   1: 'Malo',
@@ -25,8 +26,9 @@ export const AddReview = () => {
 
   // Obtenemos los datos del turno si vinieron por navigation state, o default para preview
   const turno = location.state?.turno || {
-    servicio: 'Corte de Pelo Degradé',
-    barbero: 'Franco Barbero',
+    id: 2,
+    servicio: 'Perfilado de Barba',
+    barbero: 'Lucas Martino',
     fecha: '05/10/2026',
   };
 
@@ -37,10 +39,13 @@ export const AddReview = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (turno.id) {
+      mockStore.guardarResena(turno.id, rating, comment);
+    }
     setEnviado(true);
     setTimeout(() => {
       navigate('/appointments');
-    }, 1200);
+    }, 1000);
   };
 
   return (

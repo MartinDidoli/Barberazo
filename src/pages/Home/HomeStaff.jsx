@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -13,39 +13,36 @@ import {
   Chip,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { mockStore } from "../../services/mockStore";
 
 export const HomeStaff = () => {
   const navigate = useNavigate();
 
-  // El rol viene determinado por el usuario logueado ('empleado' o 'dueño')
-  const rolUsuario = localStorage.getItem('barberazo_role') || 'dueño';
-  const nombreUsuario = localStorage.getItem('barberazo_user_name') || (rolUsuario === 'dueño' ? 'Martín Dueño' : 'Franco Barbero');
+  const currentUser = mockStore.getCurrentUser();
+  const rolUsuario = currentUser?.role || 'dueño';
+  const nombreUsuario = currentUser?.name || (rolUsuario === 'dueño' ? 'Martín Dueño' : 'Franco Barbero');
 
-  // Turnos del día
-  const [turnos, setTurnos] = useState([
-    { id: 1, cliente: 'Rodrigo Bozio', servicio: 'Corte Degradé', horario: '10:30', monto: '$ 12.000', estado: 'pendiente' },
-    { id: 2, cliente: 'Lucas Martino', servicio: 'Cejas y Barba', horario: '11:15', monto: '$ 10.000', estado: 'pendiente' },
-    { id: 3, cliente: 'Martín Didoli', servicio: 'Perfilado Barba', horario: '12:00', monto: '$ 8.000', estado: 'cancelado_sin_multa' },
-    { id: 4, cliente: 'Alejandro Rozas', servicio: 'Corte Clásico', horario: '12:45', monto: '$ 12.000', estado: 'cancelo_cliente' },
-    { id: 5, cliente: 'Mariano López', servicio: 'Corte + Barba', horario: '14:00', monto: '$ 18.000', estado: 'completado' },
-  ]);
+  // Turnos del día cargados desde el almacén central
+  const [turnos, setTurnos] = useState([]);
+
+  const loadTurnos = () => {
+    setTurnos(mockStore.getTurnos());
+  };
+
+  useEffect(() => {
+    loadTurnos();
+  }, []);
 
   // CU 1.3: Confirmar Asistencia (Disponible para Empleado y Dueño)
   const handleMarcarAsistencia = (id, asistio) => {
-    setTurnos(prev =>
-      prev.map(t =>
-        t.id === id ? { ...t, estado: asistio ? 'completado' : 'no_asistio' } : t
-      )
-    );
+    mockStore.marcarAsistencia(id, asistio);
+    loadTurnos();
   };
 
   // CU 1.6: Cancelar turno por el local (Exclusivo Dueño, sin multa al cliente)
   const handleCancelarDueno = (id) => {
-    setTurnos(prev =>
-      prev.map(t =>
-        t.id === id ? { ...t, estado: 'cancelado_sin_multa' } : t
-      )
-    );
+    mockStore.cancelarTurnoDueno(id);
+    loadTurnos();
   };
 
   const getStatusChip = (estado) => {
@@ -71,7 +68,7 @@ export const HomeStaff = () => {
         elevation={0}
         sx={{
           width: '100%',
-          maxWidth: '1050px',
+          maxWidth: { xs: '100%', md: '1200px', lg: '1450px', xl: '1600px' },
           p: { xs: 2.5, md: 4 },
           borderRadius: 3,
           display: 'flex',
@@ -97,15 +94,6 @@ export const HomeStaff = () => {
               Sesión activa: <strong style={{ color: 'white' }}>{nombreUsuario}</strong>
             </Typography>
           </Box>
-
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => navigate('/login')}
-            sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
-          >
-            Cerrar Sesión
-          </Button>
         </Box>
 
         {/* NAVEGACIÓN SEGÚN ROL */}
@@ -146,9 +134,13 @@ export const HomeStaff = () => {
               {turnos.map((turno) => (
                 <TableRow key={turno.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                   <TableCell sx={{ fontWeight: 600, color: 'white' }}>{turno.cliente}</TableCell>
-                  <TableCell sx={{ color: 'rgba(255,255,255,0.85)' }}>{turno.servicio}</TableCell>
+                  <TableCell sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                    {Array.isArray(turno.servicios) ? turno.servicios.join(' + ') : turno.servicio || 'Servicio'}
+                  </TableCell>
                   <TableCell sx={{ color: 'white', fontWeight: 600 }}>{turno.horario} hs</TableCell>
-                  <TableCell sx={{ color: '#90caf9', fontWeight: 700 }}>{turno.monto}</TableCell>
+                  <TableCell sx={{ color: '#90caf9', fontWeight: 700 }}>
+                    $ {typeof turno.monto === 'number' ? turno.monto.toLocaleString('es-AR') : turno.monto}
+                  </TableCell>
                   <TableCell align="center">{getStatusChip(turno.estado)}</TableCell>
                   <TableCell align="center">
                     

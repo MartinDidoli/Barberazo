@@ -15,14 +15,15 @@ import {
   Chip,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { mockStore } from "../../services/mockStore";
 
 export const Home = () => {
   const navigate = useNavigate();
 
-  // Verificamos si el cliente está en estado "Multado"
-  const userStatus = localStorage.getItem('barberazo_user_status') || 'Activo';
-  const userName = localStorage.getItem('barberazo_user_name') || 'Rodrigo Bozio';
-  const isMultado = userStatus === 'Multado';
+  // Verificamos usuario y si está en estado "Multado"
+  const currentUser = mockStore.getCurrentUser();
+  const userName = currentUser?.name || 'Rodrigo Bozio';
+  const isMultado = currentUser?.status === 'Multado';
 
   // Lista de servicios disponibles con precio y duración en minutos
   const servicesList = [
@@ -78,6 +79,15 @@ export const Home = () => {
   };
 
   const handleConfirmReservation = () => {
+    mockStore.crearTurno({
+      servicios: selectedServices,
+      barbero: assignedBarber,
+      fecha: `${selectedDay} de Octubre, 2026`,
+      horario: selectedTime,
+      monto: totalAmount,
+      duracion: totalDuration,
+      observaciones: observations,
+    });
     setOpenModal(false);
     // Redirige a Mis Turnos
     navigate('/appointments');
@@ -89,7 +99,7 @@ export const Home = () => {
         elevation={0}
         sx={{
           width: '100%',
-          maxWidth: '960px',
+          maxWidth: { xs: '100%', md: '1100px', lg: '1350px', xl: '1500px' },
           p: { xs: 2.5, md: 4 },
           borderRadius: 3,
           display: 'flex',

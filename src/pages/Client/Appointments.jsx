@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -11,56 +11,45 @@ import {
   TableRow,
   Typography,
   Chip,
-  IconButton,
-  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { mockStore } from "../../services/mockStore";
 
 export const Appointments = () => {
   const navigate = useNavigate();
 
-  // Mock inicial de turnos del cliente para previsualización estética
-  const [turnos, setTurnos] = useState([
-    {
-      id: 1,
-      servicio: "Corte de Pelo Degradé",
-      barbero: "Franco Barbero",
-      fecha: "10/10/2026",
-      horario: "18:40",
-      monto: "$ 12.000",
-      estado: "pendiente", // pendiente, completado, cancelado_cliente
-      horasRestantes: 18, // < 24hs para simular regla de strike
-    },
-    {
-      id: 2,
-      servicio: "Perfilado de Barba",
-      barbero: "Lucas Martino",
-      fecha: "05/10/2026",
-      horario: "12:00",
-      monto: "$ 8.000",
-      estado: "completado",
-      resenaDejada: false,
-    },
-    {
-      id: 3,
-      servicio: "Corte + Barba Completo",
-      barbero: "Franco Barbero",
-      fecha: "28/09/2026",
-      horario: "15:30",
-      monto: "$ 18.000",
-      estado: "completado",
-      resenaDejada: true,
-    },
-    {
-      id: 4,
-      servicio: "Diseño de Cejas",
-      barbero: "Martín Barbero",
-      fecha: "15/09/2026",
-      horario: "11:00",
-      monto: "$ 6.000",
-      estado: "cancelado_cliente",
-    },
-  ]);
+  const [turnos, setTurnos] = useState([]);
+  const [multaModalOpen, setMultaModalOpen] = useState(false);
+  const [alertNotice, setAlertNotice] = useState(null);
+
+  // Cargar turnos del usuario actual
+  useEffect(() => {
+    setTurnos(mockStore.getTurnosForCurrentUser());
+  }, []);
+
+  const handleCancelar = (turnoId) => {
+    const res = mockStore.cancelarTurnoCliente(turnoId);
+    setTurnos(mockStore.getTurnosForCurrentUser());
+
+    if (res.seMulta) {
+      setMultaModalOpen(true);
+    } else if (res.penalizaStrike) {
+      setAlertNotice({
+        severity: 'warning',
+        text: `Turno cancelado con menos de 24 hs de anticipación. Sumaste 1 strike de penalización (${res.newStrikes}/3). Al llegar a 3 strikes se generará una multa.`,
+      });
+    } else {
+      setAlertNotice({
+        severity: 'info',
+        text: 'Turno cancelado correctamente (sin penalización por haber sido con más de 24 hs de anticipación).',
+      });
+    }
+  };
 
   const getStatusChip = (estado) => {
     switch (estado) {
@@ -83,7 +72,7 @@ export const Appointments = () => {
         elevation={0}
         sx={{
           width: '100%',
-          maxWidth: '1000px',
+          maxWidth: { xs: '100%', md: '1200px', lg: '1450px', xl: '1600px' },
           p: { xs: 2.5, md: 4 },
           borderRadius: 3,
           display: 'flex',
@@ -120,6 +109,17 @@ export const Appointments = () => {
           </Box>
         </Box>
 
+        {/* NOTIFICACIÓN DE STRIKE */}
+        {alertNotice && (
+          <Alert 
+            severity={alertNotice.severity} 
+            onClose={() => setAlertNotice(null)}
+            sx={{ border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            {alertNotice.text}
+          </Alert>
+        )}
+
         {/* TABLA DE TURNOS */}
         <TableContainer
           component={Paper}
@@ -133,7 +133,7 @@ export const Appointments = () => {
           <Table sx={{ minWidth: 700 }}>
             <TableHead>
               <TableRow>
-                <TableCell>Servicio</TableCell>
+                <TableCell>Servicio(s)</TableCell>
                 <TableCell>Barbero</TableCell>
                 <TableCell>Fecha & Horario</TableCell>
                 <TableCell>Monto</TableCell>
@@ -142,78 +142,90 @@ export const Appointments = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {turnos.map((turno) => (
-                <TableRow
-                  key={turno.id}
-                  hover
-                  sx={{
-                    '&:last-child td, &:last-child th': { border: 0 },
-                    transition: 'background-color 0.2s ease',
-                  }}
-                >
-                  <TableCell sx={{ fontWeight: 600, color: 'white' }}>
-                    {turno.servicio}
-                  </TableCell>
-                  <TableCell sx={{ color: 'rgba(255,255,255,0.85)' }}>
-                    {turno.barbero}
-                  </TableCell>
-                  <TableCell sx={{ color: 'rgba(255,255,255,0.85)' }}>
-                    {turno.fecha} — {turno.horario} hs
-                  </TableCell>
-                  <TableCell sx={{ color: '#90caf9', fontWeight: 700 }}>
-                    {turno.monto}
-                  </TableCell>
-                  <TableCell align="center">
-                    {getStatusChip(turno.estado)}
-                  </TableCell>
-                  <TableCell align="center">
-                    {/* ACCIONES CONDICIONALES SEGÚN CASO DE USO */}
-                    {turno.estado === 'pendiente' && (
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        size="small"
-                        sx={{ fontSize: '12px', fontWeight: 600 }}
-                        onClick={() => {
-                          // Simulación visual de cancelación
-                          alert(`Se cancelará el turno. ${turno.horasRestantes < 24 ? 'Atención: Restan menos de 24 horas, sumará 1 strike.' : ''}`);
-                        }}
-                      >
-                        Cancelar
-                      </Button>
-                    )}
-
-                    {turno.estado === 'completado' && !turno.resenaDejada && (
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        size="small"
-                        sx={{ fontSize: '12px', fontWeight: 600 }}
-                        onClick={() => navigate('/add-review', { state: { turno } })}
-                      >
-                        Dejar reseña
-                      </Button>
-                    )}
-
-                    {turno.estado === 'completado' && turno.resenaDejada && (
-                      <Typography variant="caption" sx={{ color: '#81c784', fontStyle: 'italic' }}>
-                        ✓ Reseña enviada
-                      </Typography>
-                    )}
-
-                    {turno.estado.startsWith('cancelado') && (
-                      <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)' }}>
-                        Sin acciones
-                      </Typography>
-                    )}
+              {turnos.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.5)' }}>
+                    No tenés turnos registrados en este momento.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                turnos.map((turno) => {
+                  const serviciosText = Array.isArray(turno.servicios)
+                    ? turno.servicios.join(' + ')
+                    : turno.servicio || 'Servicio';
+
+                  return (
+                    <TableRow
+                      key={turno.id}
+                      hover
+                      sx={{
+                        '&:last-child td, &:last-child th': { border: 0 },
+                        transition: 'background-color 0.2s ease',
+                      }}
+                    >
+                      <TableCell sx={{ fontWeight: 600, color: 'white' }}>
+                        {serviciosText}
+                      </TableCell>
+                      <TableCell sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                        {turno.barbero}
+                      </TableCell>
+                      <TableCell sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                        {turno.fecha} — {turno.horario} hs
+                      </TableCell>
+                      <TableCell sx={{ color: '#90caf9', fontWeight: 700 }}>
+                        $ {typeof turno.monto === 'number' ? turno.monto.toLocaleString('es-AR') : turno.monto}
+                      </TableCell>
+                      <TableCell align="center">
+                        {getStatusChip(turno.estado)}
+                      </TableCell>
+                      <TableCell align="center">
+                        {/* CU 1.5: CANCELAR TURNO */}
+                        {turno.estado === 'pendiente' && (
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            size="small"
+                            sx={{ fontSize: '12px', fontWeight: 600 }}
+                            onClick={() => handleCancelar(turno.id)}
+                          >
+                            Cancelar
+                          </Button>
+                        )}
+
+                        {/* CU 1.4: DEJAR RESEÑA */}
+                        {turno.estado === 'completado' && !turno.resenaDejada && (
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            size="small"
+                            sx={{ fontSize: '12px', fontWeight: 600 }}
+                            onClick={() => navigate('/add-review', { state: { turno } })}
+                          >
+                            Dejar reseña
+                          </Button>
+                        )}
+
+                        {turno.estado === 'completado' && turno.resenaDejada && (
+                          <Typography variant="caption" sx={{ color: '#81c784', fontStyle: 'italic', fontWeight: 600 }}>
+                            ✓ Reseña enviada
+                          </Typography>
+                        )}
+
+                        {turno.estado.startsWith('cancelado') && (
+                          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)' }}>
+                            Sin acciones
+                          </Typography>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </TableContainer>
 
-        {/* PIE DE PÁGINA / BOTÓN VOLVER */}
+        {/* PIE DE PÁGINA */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 1 }}>
           <Button
             variant="outlined"
@@ -224,6 +236,58 @@ export const Appointments = () => {
           </Button>
         </Box>
       </Paper>
+
+      {/* MODAL DE ADVERTENCIA POR ALCANZAR 3 STRIKES (CU 1.5) */}
+      <Dialog
+        open={multaModalOpen}
+        onClose={() => setMultaModalOpen(false)}
+        slotProps={{
+          paper: {
+            sx: {
+              width: '100%',
+              maxWidth: '460px',
+              p: 2,
+              borderRadius: 3,
+              backgroundColor: '#1c1917',
+              border: '1px solid #ef5350',
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: '#ef5350', fontWeight: 800, textAlign: 'center' }}>
+          ⚠️ Límite de Strikes Alcanzado
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ color: 'white', textAlign: 'center', mb: 2 }}>
+            Acumulaste <strong>3 cancelaciones con menos de 24 horas de anticipación</strong>.
+          </Typography>
+          <Alert severity="error" sx={{ backgroundColor: 'rgba(239, 83, 80, 0.15)', color: '#ffcdd2' }}>
+            Se ha emitido una multa de <strong>$ 5.000</strong> a tu nombre. Tu cuenta pasa al estado <strong>MULTADO</strong> y se bloquea la reserva de nuevos turnos hasta abonar la penalización.
+          </Alert>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 1, display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={() => setMultaModalOpen(false)}
+            sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+          >
+            Entendido
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            fullWidth
+            onClick={() => {
+              setMultaModalOpen(false);
+              navigate('/Multas');
+            }}
+            sx={{ fontWeight: 700 }}
+          >
+            Ir a Pagar Multa
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

@@ -1,24 +1,40 @@
+import { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Typography, Box, Button, Chip } from '@mui/material';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { mockStore } from '../../services/mockStore';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const currentRole = localStorage.getItem('barberazo_role') || 'cliente';
-  const currentUser = localStorage.getItem('barberazo_user_name') || 'Rodrigo Bozio';
+  const [currentUser, setCurrentUser] = useState(mockStore.getCurrentUser());
+
+  // Actualizar usuario ante cambios de ruta o storage
+  useEffect(() => {
+    setCurrentUser(mockStore.getCurrentUser());
+  }, [location.pathname]);
 
   const roleColor = {
     cliente: 'primary',
     empleado: 'info',
     dueño: 'secondary',
-  }[currentRole] || 'default';
+  }[currentUser?.role] || 'default';
 
   const handleLogout = () => {
-    localStorage.removeItem('barberazo_role');
-    localStorage.removeItem('barberazo_user_name');
-    localStorage.removeItem('barberazo_user_status');
+    mockStore.logout();
+    setCurrentUser(null);
     navigate('/login');
+  };
+
+  // El logo te lleva al Home según rol si estás logueado, o a la Landing si no
+  const handleLogoClick = () => {
+    if (!currentUser) {
+      navigate('/');
+    } else if (currentUser.role === 'cliente') {
+      navigate('/home');
+    } else {
+      navigate('/home-staff');
+    }
   };
 
   return (
@@ -33,8 +49,11 @@ const Navbar = () => {
     >
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', px: { xs: 2, md: 4 } }}>
         
-        {/* LOGO & BRAND */}
-        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* LOGO & BRAND (Navegación inteligente) */}
+        <Box 
+          onClick={handleLogoClick}
+          sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}
+        >
           <Box 
             sx={{ 
               width: 38, 
@@ -61,27 +80,26 @@ const Navbar = () => {
               Barber Shop & Style
             </Typography>
           </Box>
-        </Link>
+        </Box>
 
         {/* NAVEGACIÓN Y PERFIL DE USUARIO */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 2.5 } }}>
           
-          {location.pathname !== '/login' && (
+          {currentUser ? (
             <>
-              {/* Indicador del usuario autenticado */}
+              {/* Usuario logueado */}
               <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>
-                  {currentUser}
+                  {currentUser.name}
                 </Typography>
                 <Chip 
-                  label={currentRole.toUpperCase()} 
+                  label={currentUser.role.toUpperCase()} 
                   size="small" 
                   color={roleColor}
                   sx={{ fontWeight: 'bold', fontSize: '10px' }}
                 />
               </Box>
 
-              {/* Botón tradicional de Cerrar Sesión */}
               <Button 
                 variant="outlined" 
                 size="small"
@@ -96,6 +114,23 @@ const Navbar = () => {
                 Cerrar Sesión
               </Button>
             </>
+          ) : (
+            // Usuario anónimo / sin sesión (no mostramos botón redundante en la landing ni en login)
+            location.pathname !== '/login' && location.pathname !== '/' && (
+              <Button 
+                variant="contained" 
+                size="small"
+                onClick={() => navigate('/login')}
+                sx={{ 
+                  backgroundColor: '#1976d2', 
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  px: 2.5
+                }}
+              >
+                Iniciar Sesión
+              </Button>
+            )
           )}
 
         </Box>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Table,
@@ -15,36 +15,35 @@ import {
   AlertTitle,
   Card,
   CardContent,
+  Snackbar,
 } from '@mui/material';
 import { useNavigate } from "react-router-dom";
+import { mockStore } from "../../services/mockStore";
 
 export const Multas = () => {
   const navigate = useNavigate();
 
-  // Mock de estado para visualización estética inicial
-  const [strikes, setStrikes] = useState(2);
-  const [multas, setMultas] = useState([
-    {
-      id: 1,
-      fecha: '06/10/2026',
-      motivo: 'Cancelación tardía (< 24 horas)',
-      monto: '$ 5.000',
-      estado: 'Pendiente',
-    },
-    {
-      id: 2,
-      fecha: '15/08/2026',
-      motivo: 'Acumulación de 3 cancelaciones',
-      monto: '$ 5.000',
-      estado: 'Pagado',
-    },
-  ]);
+  const [user, setUser] = useState(mockStore.getCurrentUser());
+  const [multas, setMultas] = useState([]);
+  const [snackOpen, setSnackOpen] = useState(false);
+
+  const loadData = () => {
+    const currentUser = mockStore.getCurrentUser();
+    setUser(currentUser);
+    setMultas(mockStore.getMultas(currentUser?.email));
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const tieneMultaPendiente = multas.some(m => m.estado === 'Pendiente');
+  const strikes = user?.strikes || 0;
 
   const handlePagar = (id) => {
-    setMultas(prev => prev.map(m => m.id === id ? { ...m, estado: 'Pagado' } : m));
-    alert('¡Pago simulado con éxito! Tu cuenta queda regularizada.');
+    mockStore.pagarMulta(id);
+    loadData();
+    setSnackOpen(true);
   };
 
   return (
@@ -53,7 +52,7 @@ export const Multas = () => {
         elevation={0}
         sx={{
           width: '100%',
-          maxWidth: '950px',
+          maxWidth: { xs: '100%', md: '1150px', lg: '1350px', xl: '1500px' },
           p: { xs: 2.5, md: 4 },
           borderRadius: 3,
           display: 'flex',
@@ -68,17 +67,26 @@ export const Multas = () => {
               GESTIÓN DE MULTAS Y PENALIZACIONES
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-              Revisá tus penalizaciones por cancelaciones fuera de término y regularizá tu situación
+              Cliente: <strong style={{ color: 'white' }}>{user?.name}</strong> ({user?.email})
             </Typography>
           </Box>
 
-          <Button
-            variant="outlined"
-            onClick={() => navigate('/appointments')}
-            sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
-          >
-            Mis Turnos
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/appointments')}
+              sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+            >
+              Mis Turnos
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => navigate('/home')}
+              sx={{ backgroundColor: '#1976d2', fontWeight: 700 }}
+            >
+              Reservar Turno
+            </Button>
+          </Box>
         </Box>
 
         {/* TARJETAS DE RESUMEN (STRIKES Y ESTADO) */}
@@ -93,14 +101,14 @@ export const Multas = () => {
                   {strikes} / 3
                 </Typography>
                 <Chip
-                  label={strikes >= 2 ? 'Riesgo de Multa' : 'Estado Normal'}
+                  label={strikes >= 3 ? 'Límite Excedido' : strikes === 2 ? 'Riesgo de Multa' : 'Normal'}
                   size="small"
                   color={strikes >= 2 ? 'warning' : 'default'}
                   variant="outlined"
                 />
               </Box>
               <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.4)', mt: 1, display: 'block' }}>
-                * Al llegar a 3 strikes por cancelar con menos de 24hs se genera una multa.
+                * Cancelar un turno con menos de 24 hs suma 1 strike. Al 3er strike se aplica multa.
               </Typography>
             </CardContent>
           </Card>
@@ -121,7 +129,9 @@ export const Multas = () => {
                 />
               </Box>
               <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.4)', mt: 1, display: 'block' }}>
-                {tieneMultaPendiente ? 'Aboná la multa pendiente para poder reservar nuevos turnos.' : 'Sin restricciones activas.'}
+                {tieneMultaPendiente
+                  ? 'Aboná la multa pendiente para reactivar el selector de turnos.'
+                  : 'Tu cuenta está al día sin penalizaciones pendientes.'}
               </Typography>
             </CardContent>
           </Card>
@@ -130,8 +140,8 @@ export const Multas = () => {
         {/* ALERTA VISIBLE SI ESTÁ MULTADO */}
         {tieneMultaPendiente && (
           <Alert severity="error" sx={{ backgroundColor: 'rgba(239, 83, 80, 0.12)', border: '1px solid rgba(239, 83, 80, 0.3)', color: '#ffcdd2' }}>
-            <AlertTitle sx={{ fontWeight: 'bold' }}>Acceso a turnos restringido</AlertTitle>
-            Tenés una multa pendiente de pago. Hasta que no la abones, no podrás confirmar nuevas reservas en la barbería.
+            <AlertTitle sx={{ fontWeight: 'bold' }}>Acceso a nuevos turnos restringido</AlertTitle>
+            Tenés una multa pendiente de pago. Hasta regularizar tu cuenta mediante el botón "Pagar Multa", no podrás confirmar nuevas reservas en Barberazo.
           </Alert>
         )}
 
@@ -149,49 +159,59 @@ export const Multas = () => {
             <TableHead>
               <TableRow>
                 <TableCell>Fecha</TableCell>
-                <TableCell>Motivo</TableCell>
+                <TableCell>Motivo de la Sanción</TableCell>
                 <TableCell>Monto</TableCell>
                 <TableCell align="center">Estado</TableCell>
                 <TableCell align="center">Acción</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {multas.map((multa) => (
-                <TableRow
-                  key={multa.id}
-                  hover
-                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                >
-                  <TableCell sx={{ color: 'rgba(255,255,255,0.85)' }}>{multa.fecha}</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{multa.motivo}</TableCell>
-                  <TableCell sx={{ color: '#ef5350', fontWeight: 800 }}>{multa.monto}</TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={multa.estado}
-                      size="small"
-                      color={multa.estado === 'Pendiente' ? 'error' : 'success'}
-                      sx={{ fontWeight: 700 }}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    {multa.estado === 'Pendiente' ? (
-                      <Button
-                        variant="contained"
-                        size="small"
-                        color="success"
-                        sx={{ fontWeight: 700, px: 2.5 }}
-                        onClick={() => handlePagar(multa.id)}
-                      >
-                        Pagar Multa
-                      </Button>
-                    ) : (
-                      <Typography variant="caption" sx={{ color: '#81c784', fontStyle: 'italic' }}>
-                        ✓ Regularizado
-                      </Typography>
-                    )}
+              {multas.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.5)' }}>
+                    No registrás multas en tu historial.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                multas.map((multa) => (
+                  <TableRow
+                    key={multa.id}
+                    hover
+                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                  >
+                    <TableCell sx={{ color: 'rgba(255,255,255,0.85)' }}>{multa.fecha}</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>{multa.motivo}</TableCell>
+                    <TableCell sx={{ color: '#ef5350', fontWeight: 800 }}>
+                      $ {Number(multa.monto).toLocaleString('es-AR')}
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip
+                        label={multa.estado}
+                        size="small"
+                        color={multa.estado === 'Pendiente' ? 'error' : 'success'}
+                        sx={{ fontWeight: 700 }}
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      {multa.estado === 'Pendiente' ? (
+                        <Button
+                          variant="contained"
+                          size="small"
+                          color="success"
+                          sx={{ fontWeight: 700, px: 2.5 }}
+                          onClick={() => handlePagar(multa.id)}
+                        >
+                          Pagar Multa
+                        </Button>
+                      ) : (
+                        <Typography variant="caption" sx={{ color: '#81c784', fontStyle: 'italic', fontWeight: 600 }}>
+                          ✓ Pagado / Habilitado
+                        </Typography>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -207,6 +227,14 @@ export const Multas = () => {
           </Button>
         </Box>
       </Paper>
+
+      {/* SNACKBAR DE CONFIRMACIÓN DE PAGO */}
+      <Snackbar
+        open={snackOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackOpen(false)}
+        message="¡Pago registrado con éxito! Tu cuenta ha sido regularizada y podés volver a reservar turnos."
+      />
     </Box>
   );
 };

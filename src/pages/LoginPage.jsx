@@ -9,11 +9,10 @@ import {
   List,
   ListItem,
   ListItemButton,
-  ListItemText,
   Chip,
-  IconButton,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { mockStore, TEST_ACCOUNTS } from '../services/mockStore';
 
 export const LoginPage = () => {
   const borderRadius = "10px";
@@ -22,6 +21,18 @@ export const LoginPage = () => {
   const [email, setEmail] = useState('cliente@barberazo.com');
   const [password, setPassword] = useState('123456');
   const [openDrawer, setOpenDrawer] = useState(false);
+
+  // Redirigir automáticamente si ya hay una sesión abierta
+  useEffect(() => {
+    const existing = mockStore.getCurrentUser();
+    if (existing) {
+      if (existing.role === 'cliente') {
+        navigate('/home');
+      } else {
+        navigate('/home-staff');
+      }
+    }
+  }, [navigate]);
 
   // Atajo invisible F2 para abrir el cajón de autocompletado rápido
   useEffect(() => {
@@ -35,14 +46,6 @@ export const LoginPage = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Cuentas predefinidas del sistema
-  const testAccounts = [
-    { email: 'cliente@barberazo.com', name: 'Rodrigo Bozio', role: 'cliente', status: 'Activo', label: 'Cliente (Activo)' },
-    { email: 'multado@barberazo.com', name: 'Lucas Martino', role: 'cliente', status: 'Multado', label: 'Cliente (Multado)' },
-    { email: 'empleado@barberazo.com', name: 'Franco Barbero', role: 'empleado', status: 'Activo', label: 'Empleado' },
-    { email: 'dueno@barberazo.com', name: 'Martín Dueño', role: 'dueño', status: 'Activo', label: 'Dueño' },
-  ];
-
   const handleSelectAccount = (acc) => {
     setEmail(acc.email);
     setPassword('123456');
@@ -51,17 +54,9 @@ export const LoginPage = () => {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    
-    const matchedAccount = testAccounts.find((a) => a.email.toLowerCase() === email.trim().toLowerCase());
-    const role = matchedAccount ? matchedAccount.role : 'cliente';
-    const name = matchedAccount ? matchedAccount.name : 'Usuario';
-    const status = matchedAccount ? matchedAccount.status : 'Activo';
+    const user = mockStore.login(email);
 
-    localStorage.setItem('barberazo_role', role);
-    localStorage.setItem('barberazo_user_name', name);
-    localStorage.setItem('barberazo_user_status', status);
-
-    if (role === 'cliente') {
+    if (user.role === 'cliente') {
       navigate('/home');
     } else {
       navigate('/home-staff');
@@ -179,7 +174,7 @@ export const LoginPage = () => {
         </Typography>
 
         <List disablePadding>
-          {testAccounts.map((acc) => (
+          {Object.values(TEST_ACCOUNTS).map((acc) => (
             <ListItem key={acc.email} disablePadding sx={{ mb: 1.5 }}>
               <ListItemButton
                 onClick={() => handleSelectAccount(acc)}

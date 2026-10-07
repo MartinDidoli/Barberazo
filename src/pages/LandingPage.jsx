@@ -1,8 +1,20 @@
 import { Button, Box, Typography, Paper } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { mockStore } from "../services/mockStore";
 
 export const LandingPage = () => {
   const navigate = useNavigate();
+  const currentUser = mockStore.getCurrentUser();
+
+  const handleAction = () => {
+    if (!currentUser) {
+      navigate("/login");
+    } else if (currentUser.role === "cliente") {
+      navigate("/home");
+    } else {
+      navigate("/home-staff");
+    }
+  };
 
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", padding: 2 }}>
@@ -56,14 +68,14 @@ export const LandingPage = () => {
             Para que te veas y sientas bien
           </Typography>
 
-          {/* Botón Ingresar */}
+          {/* Botón Ingresar / Ir al Panel */}
           <Button
             variant="contained"
             size="large"
-            sx={{ backgroundColor: "#007bff", color: "white", padding: "10px 40px", fontWeight: "bold", mt: 2, borderRadius: 2 }}
-            onClick={() => navigate("/login")}
+            sx={{ backgroundColor: "#1976d2", color: "white", padding: "12px 40px", fontWeight: "bold", mt: 2, borderRadius: 2 }}
+            onClick={handleAction}
           >
-            Ingresar
+            {currentUser ? (currentUser.role === 'cliente' ? "Reservar Turno" : "Ir a Mi Panel") : "Ingresar"}
           </Button>
 
         </Box>
