@@ -12,6 +12,23 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { mockStore } from "../../services/mockStore";
 
+const turnoReviewVencido = (turno) => {
+  if (!turno || turno.estado !== 'completado') return false;
+
+  const fecha = turno.fecha;
+  if (!fecha || typeof fecha !== 'string') return false;
+
+  const match = fecha.match(/^\d{2}\/\d{2}\/\d{4}$/);
+  if (!match) return false;
+
+  const [day, month, year] = fecha.split('/').map(Number);
+  const turnoDate = new Date(year, month - 1, day);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - turnoDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  return diffDays >= 30;
+};
+
 const labels = {
   1: 'Malo',
   2: 'Regular',
@@ -37,8 +54,15 @@ export const AddReview = () => {
   const [comment, setComment] = useState('');
   const [enviado, setEnviado] = useState(false);
 
+  const reviewBloqueada = turnoReviewVencido(turno) || turno.resenaDejada;
+
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (reviewBloqueada) {
+      return;
+    }
+
     if (turno.id) {
       mockStore.guardarResena(turno.id, rating, comment);
     }
@@ -152,13 +176,15 @@ export const AddReview = () => {
             >
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              sx={{ backgroundColor: '#1976d2', fontWeight: 700, px: 3 }}
-            >
-              Publicar Reseña
-            </Button>
+            {!reviewBloqueada && (
+              <Button
+                type="submit"
+                variant="contained"
+                sx={{ backgroundColor: '#1976d2', fontWeight: 700, px: 3 }}
+              >
+                Publicar Reseña
+              </Button>
+            )}
           </Box>
         </Box>
       </Paper>

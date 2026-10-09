@@ -51,6 +51,22 @@ export const Appointments = () => {
     }
   };
 
+  const turnoVencidoPorResena = (turno) => {
+    if (!turno || turno.estado !== 'completado') return false;
+
+    const fecha = turno.fecha;
+    if (!fecha || typeof fecha !== 'string') return false;
+
+    const match = fecha.match(/^\d{2}\/\d{2}\/\d{4}$/);
+    if (!match) return false;
+
+    const [day, month, year] = fecha.split('/').map(Number);
+    const turnoDate = new Date(year, month - 1, day);
+    const diffDays = Math.floor((new Date().getTime() - turnoDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    return diffDays >= 30;
+  };
+
   const getStatusChip = (estado) => {
     switch (estado) {
       case 'pendiente':
@@ -153,6 +169,8 @@ export const Appointments = () => {
                   const serviciosText = Array.isArray(turno.servicios)
                     ? turno.servicios.join(' + ')
                     : turno.servicio || 'Servicio';
+                  const reviewVencida = turnoVencidoPorResena(turno);
+                  const reviewEnviada = turno.estado === 'completado' && turno.resenaDejada && !reviewVencida;
 
                   return (
                     <TableRow
@@ -193,7 +211,7 @@ export const Appointments = () => {
                         )}
 
                         {/* CU 1.4: DEJAR RESEÑA */}
-                        {turno.estado === 'completado' && !turno.resenaDejada && (
+                        {turno.estado === 'completado' && !turno.resenaDejada && !reviewVencida && (
                           <Button
                             variant="contained"
                             color="primary"
@@ -205,7 +223,7 @@ export const Appointments = () => {
                           </Button>
                         )}
 
-                        {turno.estado === 'completado' && turno.resenaDejada && (
+                        {turno.estado === 'completado' && reviewEnviada && (
                           <Typography variant="caption" sx={{ color: '#81c784', fontStyle: 'italic', fontWeight: 600 }}>
                             ✓ Reseña enviada
                           </Typography>

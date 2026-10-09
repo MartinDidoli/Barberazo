@@ -8,10 +8,31 @@ const STORAGE_KEYS = {
   REVIEWS: 'barberazo_reviews',
 };
 
+const parseTurnoDate = (fecha) => {
+  if (!fecha || typeof fecha !== 'string') return null;
+  const match = fecha.match(/^\d{2}\/\d{2}\/\d{4}$/);
+  if (!match) return null;
+
+  const [day, month, year] = fecha.split('/').map(Number);
+  const parsed = new Date(year, month - 1, day);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+export const turnoReviewVencido = (turno) => {
+  if (!turno || turno.estado !== 'completado') return false;
+
+  const turnoDate = parseTurnoDate(turno.fecha);
+  if (!turnoDate) return false;
+
+  const diffDays = Math.floor((new Date().getTime() - turnoDate.getTime()) / (1000 * 60 * 60 * 24));
+  return diffDays >= 30;
+};
+
 // Cuentas de prueba predefinidas
 export const TEST_ACCOUNTS = {
   cliente: {
     email: 'cliente@barberazo.com',
+    password: '123456',
     name: 'Rodrigo Bozio',
     role: 'cliente',
     status: 'Activo',
@@ -20,14 +41,25 @@ export const TEST_ACCOUNTS = {
   },
   multado: {
     email: 'multado@barberazo.com',
+    password: '123456',
     name: 'Lucas Martino',
     role: 'cliente',
     status: 'Multado',
     strikes: 3,
     label: 'Cliente (Lucas - Multado)',
   },
+  bloqueado: {
+    email: 'bloqueado@barberazo.com',
+    password: '123456',
+    name: 'Angel Di Maria',
+    role: 'cliente',
+    status: 'Bloqueado',
+    strikes: 1,
+    label: 'Cliente (Angel - Bloqueado)',
+  },
   empleado: {
     email: 'empleado@barberazo.com',
+    password: '123456',
     name: 'Franco Barbero',
     role: 'empleado',
     status: 'Activo',
@@ -36,6 +68,7 @@ export const TEST_ACCOUNTS = {
   },
   dueno: {
     email: 'dueno@barberazo.com',
+    password: '123456',
     name: 'Martín Dueño',
     role: 'dueño',
     status: 'Activo',
@@ -126,6 +159,19 @@ const INITIAL_TURNOS = [
     estado: 'cancelado_sin_multa',
     resenaDejada: false,
   },
+  {
+    id: 7,
+    cliente: 'Rodrigo Bozio',
+    clienteEmail: 'cliente@barberazo.com',
+    servicios: ['Diseño de Cejas'],
+    barbero: 'Martín Barbero',
+    fecha: '01/09/2026',
+    horario: '11:00',
+    monto: 6000,
+    duracion: 15,
+    estado: 'completado',
+    resenaDejada: false,
+  },
 ];
 
 // Multas iniciales
@@ -185,33 +231,34 @@ export const mockStore = {
     }
   },
 
-  login(email) {
+  login(email, password) {
     this.init();
     const cleanEmail = (email || '').trim().toLowerCase();
-    let account = Object.values(TEST_ACCOUNTS).find(
-      (a) => a.email.toLowerCase() === cleanEmail
-    );
+    const cleanPassword = (password || '').trim();
 
-    // Fallback si ingresa otro email
+    const account = Object.values(TEST_ACCOUNTS).find((a) => {
+      return a.email.toLowerCase() === cleanEmail && (a.password || '123456') === cleanPassword;
+    });
+
     if (!account) {
-      account = {
-        email: cleanEmail || 'cliente@barberazo.com',
-        name: 'Cliente ' + (cleanEmail.split('@')[0] || 'Nuevo'),
-        role: 'cliente',
-        status: 'Activo',
-        strikes: 0,
-      };
+      return null;
+    }
+
+    if ((account.status || '').toLowerCase() === 'bloqueado') {
+      return { ...account, blocked: true };
     }
 
     // Verificar si tiene multas pendientes para ajustar su status
     const multas = this.getMultas(account.email);
     const tienePendiente = multas.some((m) => m.estado === 'Pendiente');
+    const accountToSave = { ...account };
     if (tienePendiente) {
-      account.status = 'Multado';
+      accountToSave.status = 'Multado';
     }
+    delete accountToSave.password;
 
-    this.setCurrentUser(account);
-    return account;
+    this.setCurrentUser(accountToSave);
+    return accountToSave;
   },
 
   logout() {
@@ -223,9 +270,27 @@ export const mockStore = {
   getTurnos() {
     this.init();
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEYS.TURNOS)) || [];
+      const turnos = JSON.parse(localStorage.getItem(STORAGE_KEYS.TURNOS)) || [];
+      const actualizados = turnos.map((turno) => {
+        if (turno.estado === 'completado' && !turno.resenaDejada && turnoReviewVencido(turno)) {
+          return { ...turno, resenaDejada: true };
+        }
+        return turno;
+      });
+
+      if (JSON.stringify(actualizados) !== JSON.stringify(turnos)) {
+        localStorage.setItem(STORAGE_KEYS.TURNOS, JSON.stringify(actualizados));
+      }
+
+      return actualizados;
     } catch {
-      return INITIAL_TURNOS;
+      const actualizados = INITIAL_TURNOS.map((turno) =>
+        turno.estado === 'completado' && !turno.resenaDejada && turnoReviewVencido(turno)
+          ? { ...turno, resenaDejada: true }
+          : turno
+      );
+      localStorage.setItem(STORAGE_KEYS.TURNOS, JSON.stringify(actualizados));
+      return actualizados;
     }
   },
 
@@ -333,10 +398,46 @@ export const mockStore = {
   marcarAsistencia(turnoId, asistio) {
     this.init();
     const turnos = this.getTurnos();
+    const turno = turnos.find((t) => t.id === turnoId);
+
     const turnosActualizados = turnos.map((t) =>
       t.id === turnoId ? { ...t, estado: asistio ? 'completado' : 'no_asistio' } : t
     );
     localStorage.setItem(STORAGE_KEYS.TURNOS, JSON.stringify(turnosActualizados));
+
+    if (!asistio && turno) {
+      const clienteEmail = (turno.clienteEmail || '').trim().toLowerCase();
+      const user = this.getCurrentUser();
+      const accountEntry = Object.entries(TEST_ACCOUNTS).find(([, acc]) =>
+        (acc.email || '').trim().toLowerCase() === clienteEmail
+      );
+
+      const targetUser = accountEntry
+        ? { ...accountEntry[1] }
+        : (user && (user.email || '').trim().toLowerCase() === clienteEmail ? { ...user } : null);
+
+      if (targetUser) {
+        const strikesActuales = Number(targetUser.strikes || 0);
+        const nuevosStrikes = Math.min(strikesActuales + 1, 3);
+        targetUser.strikes = nuevosStrikes;
+
+        if (nuevosStrikes >= 3) {
+          targetUser.status = 'Multado';
+        } else {
+          targetUser.status = 'Activo';
+        }
+
+        if (accountEntry) {
+          TEST_ACCOUNTS[accountEntry[0]] = targetUser;
+        }
+
+        const currentUser = this.getCurrentUser();
+        if (currentUser && (currentUser.email || '').trim().toLowerCase() === clienteEmail) {
+          this.setCurrentUser(targetUser);
+        }
+      }
+    }
+
     return { success: true };
   },
 
@@ -344,6 +445,12 @@ export const mockStore = {
   guardarResena(turnoId, rating, comment) {
     this.init();
     const turnos = this.getTurnos();
+    const turnoActual = turnos.find((t) => t.id === turnoId);
+
+    if (!turnoActual || turnoActual.estado !== 'completado' || turnoActual.resenaDejada || turnoReviewVencido(turnoActual)) {
+      return { success: false, error: 'La reseña ya no puede enviarse porque el turno venció o ya fue registrado.' };
+    }
+
     const turnosActualizados = turnos.map((t) =>
       t.id === turnoId ? { ...t, resenaDejada: true } : t
     );

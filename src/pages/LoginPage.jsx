@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
+  Alert,
   Button,
   TextField,
   Box,
@@ -21,6 +22,7 @@ export const LoginPage = () => {
   const [email, setEmail] = useState('cliente@barberazo.com');
   const [password, setPassword] = useState('123456');
   const [openDrawer, setOpenDrawer] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Redirigir automáticamente si ya hay una sesión abierta
   useEffect(() => {
@@ -48,13 +50,26 @@ export const LoginPage = () => {
 
   const handleSelectAccount = (acc) => {
     setEmail(acc.email);
-    setPassword('123456');
+    setPassword(acc.password || '123456');
+    setErrorMessage('');
     setOpenDrawer(false);
   };
 
   const handleLogin = (e) => {
     e.preventDefault();
-    const user = mockStore.login(email);
+    const user = mockStore.login(email, password);
+
+    if (!user) {
+      setErrorMessage('Datos incorrectos');
+      return;
+    }
+
+    if (user.blocked || (user.status || '').toLowerCase() === 'bloqueado') {
+      setErrorMessage('Usuario bloqueado');
+      return;
+    }
+
+    setErrorMessage('');
 
     if (user.role === 'cliente') {
       navigate('/home');
@@ -88,13 +103,22 @@ export const LoginPage = () => {
 
         {/* FORMULARIO ESTÁNDAR LIMPIO */}
         <Box component="form" onSubmit={handleLogin} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          {errorMessage && (
+            <Alert severity="error" sx={{ borderRadius: '10px' }}>
+              {errorMessage}
+            </Alert>
+          )}
+
           <TextField
             id="input-email"
             label="Correo electrónico"
             variant="outlined"
             size="small"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setErrorMessage('');
+            }}
             fullWidth
             required
           />
@@ -106,7 +130,10 @@ export const LoginPage = () => {
             variant="outlined"
             size="small"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setErrorMessage('');
+            }}
             fullWidth
             required
           />
