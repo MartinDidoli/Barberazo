@@ -13,6 +13,11 @@ import {
   Alert,
   AlertTitle,
   Chip,
+  IconButton,
+  Menu,
+  MenuItem,
+  Badge,
+  SvgIcon,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { mockStore } from "../../services/mockStore";
@@ -37,7 +42,7 @@ export const Home = () => {
   const [selectedServices, setSelectedServices] = useState([servicesList[1]]);
   const [selectedTime, setSelectedTime] = useState('18:40');
   const [observations, setObservations] = useState('');
-  
+
   // Calendario interactivo (Octubre 2026)
   const [currentMonth, setCurrentMonth] = useState('Octubre 2026');
   const [selectedDay, setSelectedDay] = useState(12);
@@ -93,6 +98,23 @@ export const Home = () => {
     navigate('/appointments');
   };
 
+  // Estado para el menú hamburguesa en mobile
+  const [mobileMenuAnchor, setMobileMenuAnchor] = useState(null);
+  const isMobileMenuOpen = Boolean(mobileMenuAnchor);
+
+  const handleOpenMobileMenu = (event) => {
+    setMobileMenuAnchor(event.currentTarget);
+  };
+
+  const handleCloseMobileMenu = () => {
+    setMobileMenuAnchor(null);
+  };
+
+  const handleNavigateMobile = (path) => {
+    handleCloseMobileMenu();
+    navigate(path);
+  };
+
   return (
     <Box sx={{ minHeight: 'calc(100vh - 70px)', display: 'flex', justifyContent: 'center', p: { xs: 2, md: 4 } }}>
       <Paper
@@ -108,17 +130,18 @@ export const Home = () => {
         }}
       >
         {/* ENCABEZADO Y NAVEGACIÓN CLIENTE */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-          <Box>
-            <Typography variant="h5" sx={{ color: 'white', fontWeight: 800 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h5" sx={{ color: 'white', fontWeight: 800, fontSize: { xs: '1.25rem', md: '1.5rem' } }}>
               RESERVAR TURNO
             </Typography>
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontSize: { xs: '0.8rem', md: '0.875rem' } }}>
               Hola, <strong style={{ color: 'white' }}>{userName}</strong>. Seleccioná fecha, horario y servicios
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 1.5 }}>
+          {/* NAVEGACIÓN DESKTOP (pantallas medianas y grandes) */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1.5 }}>
             <Button
               variant="outlined"
               onClick={() => navigate('/appointments')}
@@ -129,8 +152,8 @@ export const Home = () => {
             <Button
               variant="outlined"
               onClick={() => navigate('/Multas')}
-              sx={{ 
-                borderColor: isMultado ? '#ef5350' : 'rgba(255,255,255,0.3)', 
+              sx={{
+                borderColor: isMultado ? '#ef5350' : 'rgba(255,255,255,0.3)',
                 color: isMultado ? '#ff8a80' : 'white',
                 fontWeight: isMultado ? 700 : 500
               }}
@@ -145,14 +168,108 @@ export const Home = () => {
               Perfil
             </Button>
           </Box>
+
+          {/* NAVEGACIÓN MOBILE (MENÚ HAMBURGUESA) */}
+          <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center' }}>
+            <IconButton
+              aria-label="Abrir menú de opciones"
+              aria-controls={isMobileMenuOpen ? 'mobile-home-menu' : undefined}
+              aria-haspopup="true"
+              aria-expanded={isMobileMenuOpen ? 'true' : undefined}
+              onClick={handleOpenMobileMenu}
+              sx={{
+                color: 'white',
+                border: isMultado ? '1px solid rgba(239, 83, 80, 0.6)' : '1px solid rgba(255, 255, 255, 0.25)',
+                borderRadius: 2,
+                p: 1,
+                backgroundColor: isMultado ? 'rgba(239, 83, 80, 0.12)' : 'rgba(255, 255, 255, 0.05)',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  borderColor: 'rgba(255, 255, 255, 0.4)',
+                },
+              }}
+            >
+              <Badge
+                color="error"
+                variant="dot"
+                invisible={!isMultado}
+              >
+                {/* Ícono de menú hamburguesa */}
+                <SvgIcon sx={{ fontSize: 24 }}>
+                  <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" fill="currentColor" />
+                </SvgIcon>
+              </Badge>
+            </IconButton>
+
+            {/* Dropdown del menú hamburguesa */}
+            <Menu
+              id="mobile-home-menu"
+              anchorEl={mobileMenuAnchor}
+              open={isMobileMenuOpen}
+              onClose={handleCloseMobileMenu}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              slotProps={{
+                paper: {
+                  sx: {
+                    mt: 1,
+                    minWidth: 190,
+                    backgroundColor: '#161b22',
+                    backgroundImage: 'none',
+                    borderRadius: 2,
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
+                    py: 0.5,
+                    '& .MuiMenuItem-root': {
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      py: 1.2,
+                      px: 2,
+                      gap: 1.5,
+                      color: 'white',
+                      transition: 'background-color 0.15s ease',
+                      '&:hover': {
+                        backgroundColor: 'rgba(25, 118, 210, 0.18)',
+                      },
+                    },
+                  },
+                },
+              }}
+            >
+              <MenuItem onClick={() => handleNavigateMobile('/appointments')}>
+                <Box component="span" sx={{ fontSize: '16px' }}>📅</Box>
+                Mis Turnos
+              </MenuItem>
+              <MenuItem
+                onClick={() => handleNavigateMobile('/Multas')}
+                sx={{
+                  color: isMultado ? '#ff8a80 !important' : 'white',
+                  fontWeight: isMultado ? '700 !important' : '600',
+                }}
+              >
+                <Box component="span" sx={{ fontSize: '16px' }}>⚠️</Box>
+                Multas {isMultado && '(!)'}
+              </MenuItem>
+              <MenuItem onClick={() => handleNavigateMobile('/profile')}>
+                <Box component="span" sx={{ fontSize: '16px' }}>👤</Box>
+                Perfil
+              </MenuItem>
+            </Menu>
+          </Box>
         </Box>
 
         {/* ALERTA DE BLOQUEO SI EL CLIENTE ESTÁ MULTADO */}
         {isMultado && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              backgroundColor: 'rgba(239, 83, 80, 0.12)', 
+          <Alert
+            severity="error"
+            sx={{
+              backgroundColor: 'rgba(239, 83, 80, 0.12)',
               border: '1px solid rgba(239, 83, 80, 0.35)',
               color: '#ffcdd2'
             }}
@@ -169,7 +286,7 @@ export const Home = () => {
 
         {/* CUERPO PRINCIPAL (2 COLUMNAS) */}
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4 }}>
-          
+
           {/* COLUMNA IZQUIERDA: CALENDARIO Y MONTO */}
           <Box sx={{ flex: 1.1, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             <Typography variant="subtitle1" sx={{ color: 'white', fontWeight: 700 }}>
@@ -230,13 +347,13 @@ export const Home = () => {
                         backgroundColor: isSelected
                           ? '#1976d2'
                           : isPast
-                          ? 'transparent'
-                          : 'rgba(255, 255, 255, 0.04)',
+                            ? 'transparent'
+                            : 'rgba(255, 255, 255, 0.04)',
                         color: isSelected
                           ? 'white'
                           : isPast
-                          ? 'rgba(255, 255, 255, 0.2)'
-                          : 'white',
+                            ? 'rgba(255, 255, 255, 0.2)'
+                            : 'white',
                         border: isSelected
                           ? '1px solid #42a5f5'
                           : '1px solid transparent',
@@ -298,7 +415,7 @@ export const Home = () => {
 
           {/* COLUMNA DERECHA: SERVICIOS MÚLTIPLES, HORARIOS Y CONFIRMAR */}
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            
+
             {/* SERVICIOS CON MULTISELECCIÓN */}
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
@@ -435,7 +552,7 @@ export const Home = () => {
           <DialogTitle sx={{ color: 'white', fontWeight: 800, textAlign: 'center', pb: 1 }}>
             Confirmar Reserva de Turno
           </DialogTitle>
-          
+
           <DialogContent>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', textAlign: 'center', mb: 2 }}>
               Por favor revisá los detalles antes de agendar tu turno:
