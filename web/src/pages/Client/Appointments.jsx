@@ -122,7 +122,7 @@ export const Appointments = () => {
         {/* Top: Service + Status */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="h6" sx={{ color: 'white', fontWeight: 700, mb: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <Typography variant="h6" sx={{ color: 'white', fontWeight: 700, mb: 0.5 }}>
               {serviciosText}
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: 1 }}>
