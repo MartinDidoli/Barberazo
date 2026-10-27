@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Table,
@@ -16,15 +16,19 @@ import {
   Card,
   CardContent,
   Snackbar,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import { useNavigate } from "react-router-dom";
 import { mockStore } from "../../services/mockStore";
+import PaymentIcon from '@mui/icons-material/Payment';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 export const Multas = () => {
   const navigate = useNavigate();
 
-  const [user, setUser] = useState(mockStore.getCurrentUser());
-  const [multas, setMultas] = useState([]);
+  const [user, setUser] = useState(() => mockStore.getCurrentUser());
+  const [multas, setMultas] = useState(() => mockStore.getMultas(mockStore.getCurrentUser()?.email));
   const [snackOpen, setSnackOpen] = useState(false);
 
   const loadData = () => {
@@ -33,10 +37,6 @@ export const Multas = () => {
     setMultas(mockStore.getMultas(currentUser?.email));
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   const tieneMultaPendiente = multas.some(m => m.estado === 'Pendiente');
   const strikes = user?.strikes || 0;
 
@@ -44,6 +44,108 @@ export const Multas = () => {
     mockStore.pagarMulta(id);
     loadData();
     setSnackOpen(true);
+  };
+
+  // ===== UNIFIED CHIP SYSTEM - All statuses FILLED with icons =====
+  const getStatusChip = (estado) => {
+    const chipStyles = {
+      size: 'small',
+      fontWeight: 700,
+      borderRadius: 2,
+      sx: { px: 1.5, py: 0.5, fontSize: '0.7rem' },
+    };
+
+    switch (estado) {
+      case 'Pendiente':
+        return (
+          <Chip label="Pendiente" icon={<PaymentIcon fontSize="small" />} color="error" variant="filled" {...chipStyles} />
+        );
+      case 'Pagado':
+        return (
+          <Chip label="Pagado" icon={<CheckCircleIcon fontSize="small" />} color="success" variant="filled" {...chipStyles} />
+        );
+      default:
+        return <Chip label={estado} {...chipStyles} />;
+    }
+  };
+
+  // ===== MOBILE CARD COMPONENT =====
+  const MultaCard = ({ multa }) => {
+    return (
+      <Paper
+        elevation={0}
+        sx={{
+          backgroundColor: 'rgba(255, 255, 255, 0.02)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: 2,
+          p: 2.5,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          transition: 'border-color 0.2s ease, background-color 0.2s ease',
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.04)', borderColor: 'rgba(255, 255, 255, 0.15)' },
+        }}
+      >
+        {/* Top: Date + Status */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 0.5 }}>
+              Fecha
+            </Typography>
+            <Typography variant="h6" sx={{ color: 'white', fontWeight: 700 }}>
+              {multa.fecha}
+            </Typography>
+          </Box>
+          <Box sx={{ flexShrink: 0 }}>{getStatusChip(multa.estado)}</Box>
+        </Box>
+
+        {/* Middle: Reason + Amount */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 0.5 }}>
+              Motivo
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'white', fontWeight: 600 }}>
+              {multa.motivo}
+            </Typography>
+          </Box>
+          <Typography variant="h6" sx={{ color: '#ef5350', fontWeight: 800, whiteSpace: 'nowrap' }}>
+            $ {Number(multa.monto).toLocaleString('es-AR')}
+          </Typography>
+        </Box>
+
+        {/* Bottom: Action */}
+        <Box sx={{ pt: 1, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          {multa.estado === 'Pendiente' ? (
+            <Tooltip title="Pagar multa">
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={<PaymentIcon fontSize="small" />}
+                size="small"
+                fullWidth
+                sx={{ fontWeight: 700, fontSize: '0.8rem' }}
+                onClick={() => handlePagar(multa.id)}
+              >
+                Pagar Multa
+              </Button>
+            </Tooltip>
+          ) : (
+            <Button
+              variant="filled"
+              color="success"
+              disabled
+              startIcon={<CheckCircleIcon fontSize="small" />}
+              size="small"
+              fullWidth
+              sx={{ fontWeight: 700, fontSize: '0.8rem', opacity: 1 }}
+            >
+              Pagado / Habilitado
+            </Button>
+          )}
+        </Box>
+      </Paper>
+    );
   };
 
   return (
@@ -145,76 +247,105 @@ export const Multas = () => {
           </Alert>
         )}
 
-        {/* TABLA DE MULTAS */}
-        <TableContainer
-          component={Paper}
-          sx={{
-            backgroundColor: 'rgba(255, 255, 255, 0.02)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: 2,
-            overflow: 'hidden',
-          }}
-        >
-          <Table sx={{ minWidth: 600 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>Fecha</TableCell>
-                <TableCell>Motivo de la Sanción</TableCell>
-                <TableCell>Monto</TableCell>
-                <TableCell align="center">Estado</TableCell>
-                <TableCell align="center">Acción</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {multas.length === 0 ? (
+        {/* MOBILE: CARD LAYOUT (< md) */}
+        <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 2 }}>
+          {multas.length === 0 ? (
+            <Paper
+              elevation={0}
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: 2,
+                p: 4,
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                No registrás multas en tu historial.
+              </Typography>
+            </Paper>
+          ) : (
+            multas.map((multa) => <MultaCard key={multa.id} multa={multa} />)
+          )}
+        </Box>
+
+        {/* DESKTOP: TABLE LAYOUT (≥ md) */}
+        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+          <TableContainer
+            component={Paper}
+            sx={{
+              backgroundColor: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: 2,
+              overflow: 'hidden',
+            }}
+          >
+            <Table sx={{ minWidth: 600 }}>
+              <TableHead>
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.5)' }}>
-                    No registrás multas en tu historial.
-                  </TableCell>
+                  <TableCell>Fecha</TableCell>
+                  <TableCell>Motivo de la Sanción</TableCell>
+                  <TableCell>Monto</TableCell>
+                  <TableCell align="center">Estado</TableCell>
+                  <TableCell align="center">Acción</TableCell>
                 </TableRow>
-              ) : (
-                multas.map((multa) => (
-                  <TableRow
-                    key={multa.id}
-                    hover
-                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                  >
-                    <TableCell sx={{ color: 'rgba(255,255,255,0.85)' }}>{multa.fecha}</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>{multa.motivo}</TableCell>
-                    <TableCell sx={{ color: '#ef5350', fontWeight: 800 }}>
-                      $ {Number(multa.monto).toLocaleString('es-AR')}
-                    </TableCell>
-                    <TableCell align="center">
-                      <Chip
-                        label={multa.estado}
-                        size="small"
-                        color={multa.estado === 'Pendiente' ? 'error' : 'success'}
-                        sx={{ fontWeight: 700 }}
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      {multa.estado === 'Pendiente' ? (
-                        <Button
-                          variant="contained"
-                          size="small"
-                          color="success"
-                          sx={{ fontWeight: 700, px: 2.5 }}
-                          onClick={() => handlePagar(multa.id)}
-                        >
-                          Pagar Multa
-                        </Button>
-                      ) : (
-                        <Typography variant="caption" sx={{ color: '#81c784', fontStyle: 'italic', fontWeight: 600 }}>
-                          ✓ Pagado / Habilitado
-                        </Typography>
-                      )}
+              </TableHead>
+              <TableBody>
+                {multas.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.5)' }}>
+                      No registrás multas en tu historial.
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                ) : (
+                  multas.map((multa) => (
+                    <TableRow
+                      key={multa.id}
+                      hover
+                      sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                    >
+                      <TableCell sx={{ color: 'rgba(255,255,255,0.85)' }}>{multa.fecha}</TableCell>
+                      <TableCell sx={{ color: 'white', fontWeight: 600 }}>{multa.motivo}</TableCell>
+                      <TableCell sx={{ color: '#ef5350', fontWeight: 800 }}>
+                        $ {Number(multa.monto).toLocaleString('es-AR')}
+                      </TableCell>
+                      <TableCell align="center">
+                        {getStatusChip(multa.estado)}
+                      </TableCell>
+                      <TableCell align="center">
+                        {multa.estado === 'Pendiente' ? (
+                          <Tooltip title="Pagar multa">
+                            <Button
+                              variant="contained"
+                              color="success"
+                              startIcon={<PaymentIcon fontSize="small" />}
+                              size="small"
+                              sx={{ fontWeight: 700, fontSize: '0.8rem', px: 2.5 }}
+                              onClick={() => handlePagar(multa.id)}
+                            >
+                              Pagar Multa
+                            </Button>
+                          </Tooltip>
+                        ) : (
+                          <Button
+                            variant="filled"
+                            color="success"
+                            disabled
+                            startIcon={<CheckCircleIcon fontSize="small" />}
+                            size="small"
+                            sx={{ fontWeight: 700, fontSize: '0.8rem', opacity: 1 }}
+                          >
+                            Pagado / Habilitado
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
 
         {/* BOTÓN VOLVER */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 1 }}>
