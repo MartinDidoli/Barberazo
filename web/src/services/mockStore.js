@@ -236,9 +236,23 @@ export const mockStore = {
     const cleanEmail = (email || '').trim().toLowerCase();
     const cleanPassword = (password || '').trim();
 
-    const account = Object.values(TEST_ACCOUNTS).find((a) => {
-      return a.email.toLowerCase() === cleanEmail && (a.password || '123456') === cleanPassword;
-    });
+    const customUsersRaw = localStorage.getItem('barberazo_custom_users') || '[]';
+    let customUsers = [];
+    try {
+      customUsers = JSON.parse(customUsersRaw);
+    } catch {
+      customUsers = [];
+    }
+
+    let account = customUsers.find(
+      (a) => a.email.toLowerCase() === cleanEmail && (a.password || '123456') === cleanPassword
+    );
+
+    if (!account) {
+      account = Object.values(TEST_ACCOUNTS).find((a) => {
+        return a.email.toLowerCase() === cleanEmail && (a.password || '123456') === cleanPassword;
+      });
+    }
 
     if (!account) {
       return null;
@@ -259,6 +273,45 @@ export const mockStore = {
 
     this.setCurrentUser(accountToSave);
     return accountToSave;
+  },
+
+  register({ nombre, apellido, email, telefono, password }) {
+    this.init();
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const customUsersRaw = localStorage.getItem('barberazo_custom_users') || '[]';
+    let customUsers = [];
+    try {
+      customUsers = JSON.parse(customUsersRaw);
+    } catch {
+      customUsers = [];
+    }
+
+    if (
+      customUsers.some((u) => u.email.toLowerCase() === cleanEmail) ||
+      Object.values(TEST_ACCOUNTS).some((u) => u.email.toLowerCase() === cleanEmail)
+    ) {
+      return { error: 'El correo electrónico ya se encuentra registrado' };
+    }
+
+    const newUser = {
+      email: cleanEmail,
+      password: password || '123456',
+      name: `${nombre.trim()} ${apellido.trim()}`.trim() || 'Nuevo Cliente',
+      role: 'cliente',
+      status: 'Activo',
+      strikes: 0,
+      telefono: telefono ? telefono.trim() : '',
+      label: `Cliente (${nombre.trim()} - Activo)`,
+    };
+
+    customUsers.push(newUser);
+    localStorage.setItem('barberazo_custom_users', JSON.stringify(customUsers));
+
+    const userToSave = { ...newUser };
+    delete userToSave.password;
+    this.setCurrentUser(userToSave);
+
+    return { success: true, user: userToSave };
   },
 
   logout() {
