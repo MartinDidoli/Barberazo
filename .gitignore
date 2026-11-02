@@ -4,6 +4,7 @@ api/node_modules/
 
 # Lock files
 api/package-lock.json
+package-lock.json
 
 # Build outputs
 dist/
