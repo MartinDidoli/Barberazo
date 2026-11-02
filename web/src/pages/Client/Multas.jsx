@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from "react-router-dom";
 import { mockStore } from "../../services/mockStore";
-import PaymentIcon from '@mui/icons-material/Payment';
+import PaymentIcon from '@mui/icons-material/Payments';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 export const Multas = () => {
