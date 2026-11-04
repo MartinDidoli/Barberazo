@@ -1,43 +1,144 @@
-import { Button, TextField, Box, Typography } from '@mui/material';
+import { useState } from 'react';
+import {
+  Alert,
+  Button,
+  TextField,
+  Box,
+  Typography,
+  Paper,
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
 export const ResetPasswordPage = () => {
   const borderRadius = "10px";
   const navigate = useNavigate();
 
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const handleResetPassword = (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (password !== confirmPassword) {
+      setErrorMessage('Las contraseñas no coinciden');
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    setSuccessMessage('¡Contraseña restaurada con éxito! Redirigiendo...');
+    setTimeout(() => {
+      navigate('/login');
+    }, 1200);
+  };
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', padding: 4, pt: 8 }}>
-      
-      <Box sx={{ width: '100%', maxWidth: '600px', mb: 2 }}>
-        <Typography variant="h5" fontWeight="bold">
-          Recuperar Contraseña
-        </Typography>
-        <Typography variant="subtitle1" color="textSecondary">
-          Desktop
-        </Typography>
-      </Box>
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 70px)', padding: 2 }}>
 
-      <Box component="form" sx={{ display: "flex", flexDirection: "column", gap: 3, width: '100%', maxWidth: '600px', backgroundColor: '#f9f9f9', padding: 4, borderRadius: borderRadius, border: '1px solid #e0e0e0' }}>
-        
-        < Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
-          < Box sx={{ width: 80, height: 80, borderRadius: '50%', border: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography variant="caption">LOGO</Typography>
-          </Box>
+      <Paper elevation={0} sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 3,
+        width: '100%',
+        maxWidth: '440px',
+        padding: { xs: 3, md: 5 },
+        borderRadius: borderRadius,
+      }}>
+
+        {/* ENCABEZADO */}
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h5" sx={{ color: 'white', fontWeight: 800 }}>
+            Recuperar Contraseña
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)', mt: 0.5 }}>
+            Ingresá y confirmá tu nueva contraseña
+          </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
-          <TextField label="Ingrese nueva Contraseña" type="password" variant="outlined" sx={{ width: '100%', maxWidth: '400px', backgroundColor: "#ffffff", borderRadius: borderRadius }} />
-          
-          <TextField label="Repita nueva contraseña" type="password" variant="outlined" sx={{ width: '100%', maxWidth: '400px', backgroundColor: "#ffffff", borderRadius: borderRadius }} />
-        </Box>
+        {/* FORMULARIO ESTÁNDAR LIMPIO */}
+        <Box component="form" onSubmit={handleResetPassword} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          {errorMessage && (
+            <Alert severity="error" sx={{ borderRadius: '10px' }}>
+              {errorMessage}
+            </Alert>
+          )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <Button variant="contained" size="large" onClick={() => navigate('/')} sx={{ borderRadius: borderRadius, padding: '12px 40px', fontWeight: 'bold' }}>
+          {successMessage && (
+            <Alert severity="success" sx={{ borderRadius: '10px' }}>
+              {successMessage}
+            </Alert>
+          )}
+
+          <TextField
+            id="input-new-password"
+            label="Ingrese nueva contraseña"
+            type="password"
+            variant="outlined"
+            size="small"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setErrorMessage('');
+            }}
+            fullWidth
+            required
+          />
+
+          <TextField
+            id="input-confirm-new-password"
+            label="Repita nueva contraseña"
+            type="password"
+            variant="outlined"
+            size="small"
+            value={confirmPassword}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              setErrorMessage('');
+            }}
+            fullWidth
+            required
+          />
+
+          <Button
+            type="submit"
+            variant="contained"
+            size="large"
+            sx={{
+              backgroundColor: '#1976d2',
+              padding: '12px',
+              fontWeight: 800,
+              borderRadius: borderRadius,
+              mt: 1
+            }}
+          >
             Restaurar Contraseña
           </Button>
         </Box>
 
-      </Box>
+        <Box sx={{ textAlign: 'center', mt: 1 }}>
+          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1, fontSize: '13px' }}>
+            ¿Recordaste tu contraseña?
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            fullWidth
+            sx={{ color: '#90caf9', borderColor: 'rgba(144, 202, 249, 0.4)', borderRadius: borderRadius }}
+            onClick={() => navigate('/login')}
+          >
+            Volver al Login
+          </Button>
+        </Box>
+
+      </Paper>
+
     </Box>
   );
-}
+};
