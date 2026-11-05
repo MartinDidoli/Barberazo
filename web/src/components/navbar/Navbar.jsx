@@ -38,27 +38,27 @@ const Navbar = () => {
   };
 
   return (
-    <AppBar 
-      position="static" 
-      sx={{ 
-        backgroundColor: 'rgba(14, 17, 23, 0.95)', 
-        borderBottom: '1px solid rgba(255,255,255,0.1)', 
+    <AppBar
+      position="static"
+      sx={{
+        backgroundColor: 'rgba(14, 17, 23, 0.95)',
+        borderBottom: '1px solid rgba(255,255,255,0.1)',
         boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
         backdropFilter: 'blur(10px)',
       }}
     >
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', px: { xs: 2, md: 4 } }}>
-        
+
         {/* LOGO & BRAND (Navegación inteligente) */}
-        <Box 
+        <Box
           onClick={handleLogoClick}
           sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}
         >
-          <Box 
-            sx={{ 
-              width: 38, 
-              height: 38, 
-              borderRadius: '50%', 
+          <Box
+            sx={{
+              width: 38,
+              height: 38,
+              borderRadius: '50%',
               background: 'linear-gradient(135deg, #1976d2 0%, #0d47a1 100%)',
               display: 'flex',
               alignItems: 'center',
@@ -84,7 +84,7 @@ const Navbar = () => {
 
         {/* NAVEGACIÓN Y PERFIL DE USUARIO */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 2.5 } }}>
-          
+
           {currentUser ? (
             <>
               {/* Usuario logueado */}
@@ -92,20 +92,20 @@ const Navbar = () => {
                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>
                   {currentUser.name}
                 </Typography>
-                <Chip 
-                  label={currentUser.role.toUpperCase()} 
-                  size="small" 
+                <Chip
+                  label={currentUser.role.toUpperCase()}
+                  size="small"
                   color={roleColor}
                   sx={{ fontWeight: 'bold', fontSize: '10px' }}
                 />
               </Box>
 
-              <Button 
-                variant="outlined" 
+              <Button
+                variant="outlined"
                 size="small"
                 onClick={handleLogout}
-                sx={{ 
-                  color: 'rgba(255,255,255,0.8)', 
+                sx={{
+                  color: 'rgba(255,255,255,0.8)',
                   borderColor: 'rgba(255,255,255,0.25)',
                   fontSize: '12px',
                   '&:hover': { borderColor: '#ef5350', color: '#ff8a80' }
@@ -116,13 +116,13 @@ const Navbar = () => {
             </>
           ) : (
             // Usuario anónimo / sin sesión (no mostramos botón redundante en la landing ni en login)
-            location.pathname !== '/login' && location.pathname !== '/' && (
-              <Button 
-                variant="contained" 
+            location.pathname !== '/login' && location.pathname !== '/' && location.pathname !== '/forgot-password' && location.pathname !== '/register' && (
+              <Button
+                variant="contained"
                 size="small"
                 onClick={() => navigate('/login')}
-                sx={{ 
-                  backgroundColor: '#1976d2', 
+                sx={{
+                  backgroundColor: '#1976d2',
                   fontSize: '13px',
                   fontWeight: 700,
                   px: 2.5
