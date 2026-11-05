@@ -15,6 +15,7 @@ import {CreateService} from './pages/Owner/CreateService'
 import {Reviews} from './pages/Owner/Reviews'
 import { ClientesDueno } from './pages/Owner/ClientesDueno';
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { VerifiedMailPage } from "./pages/VerifiedMailPage";
 import { Home } from "./pages/Home/Home";
 import { Appointments } from "./pages/Client/Appointments";
 import { AddReview } from "./pages/Client/AddReview";
@@ -36,6 +37,7 @@ const App = () => {
             element={<ForgotPasswordPage />}
           ></Route>
           <Route path="/reset-password" element={<ResetPasswordPage />}></Route>
+          <Route path="/verifiedMail" element={<VerifiedMailPage />}></Route>
           <Route path="/empleados-dueno/newEmployee" element={<NewEmployee />}></Route>
           <Route path="/home-staff" element={ < HomeStaff /> }></Route>
           <Route path="/habilitar-fecha" element={< HabilitarFecha />}></Route>

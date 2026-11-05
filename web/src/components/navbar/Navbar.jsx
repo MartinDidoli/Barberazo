@@ -116,7 +116,7 @@ const Navbar = () => {
             </>
           ) : (
             // Usuario anónimo / sin sesión (no mostramos botón redundante en la landing ni en login)
-            location.pathname !== '/login' && location.pathname !== '/' && location.pathname !== '/forgot-password' && location.pathname !== '/register' && (
+            location.pathname !== '/login' && location.pathname !== '/' && location.pathname !== '/forgot-password' && location.pathname !== '/register' && location.pathname !== '/verifiedMail' && (
               <Button
                 variant="contained"
                 size="small"

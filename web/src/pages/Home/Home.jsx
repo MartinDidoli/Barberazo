@@ -44,8 +44,8 @@ export const Home = () => {
   const [observations, setObservations] = useState('');
 
   // Calendario interactivo (Octubre 2026)
-  const [currentMonth, setCurrentMonth] = useState('Octubre 2026');
-  const [selectedDay, setSelectedDay] = useState(12);
+  const [currentMonth, setCurrentMonth] = useState('Noviembre 2026');
+  const [selectedDay, setSelectedDay] = useState(5);
 
   // Modal de confirmación (CU 1.2)
   const [openModal, setOpenModal] = useState(false);
@@ -54,7 +54,7 @@ export const Home = () => {
   const timesList = ['10:00', '11:30', '12:15', '15:00', '18:40', '19:30'];
 
   // Días del calendario (Octubre 2026)
-  const daysInMonth = Array.from({ length: 31 }, (_, i) => i + 1);
+  const daysInMonth = Array.from({ length: 30 }, (_, i) => i + 1);
 
   // Toggle de selección múltiple de servicios
   const handleToggleService = (srv) => {
@@ -87,7 +87,7 @@ export const Home = () => {
     mockStore.crearTurno({
       servicios: selectedServices,
       barbero: assignedBarber,
-      fecha: `${selectedDay} de Octubre, 2026`,
+      fecha: `${selectedDay} de Noviembre, 2026`,
       horario: selectedTime,
       monto: totalAmount,
       duracion: totalDuration,
@@ -323,14 +323,9 @@ export const Home = () => {
 
               {/* Grilla de días */}
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.8 }}>
-                <Box sx={{ p: 1 }} />
-                <Box sx={{ p: 1 }} />
-                <Box sx={{ p: 1 }} />
-                <Box sx={{ p: 1 }} />
-
                 {daysInMonth.map((day) => {
                   const isSelected = selectedDay === day;
-                  const isPast = day < 6;
+                  const isPast = day < 5;
                   return (
                     <Box
                       key={day}
@@ -579,7 +574,7 @@ export const Home = () => {
 
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>Fecha:</Typography>
-                <Typography variant="body2" sx={{ color: 'white', fontWeight: 700 }}>{selectedDay} de Octubre, 2026</Typography>
+                <Typography variant="body2" sx={{ color: 'white', fontWeight: 700 }}>{selectedDay} de Noviembre, 2026</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
