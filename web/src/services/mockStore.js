@@ -398,8 +398,20 @@ export const mockStore = {
     );
     localStorage.setItem(STORAGE_KEYS.TURNOS, JSON.stringify(turnosActualizados));
 
-    // Verificar si pasaron menos de 24 horas (o turno.horasRestantes < 24)
-    const penalizaStrike = (turno.horasRestantes || 0) < 24;
+    // Verificar si pasaron menos de 24 horas
+    let horas = turno.horasRestantes;
+    if (typeof horas !== 'number') {
+      const match = (turno.fecha || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (match) {
+        const [_, day, month, year] = match;
+        const [h = 12, m = 0] = (turno.horario || '12:00').split(':').map(Number);
+        const fechaTurno = new Date(Number(year), Number(month) - 1, Number(day), h, m);
+        horas = (fechaTurno.getTime() - Date.now()) / (1000 * 60 * 60);
+      } else {
+        horas = 12; // por defecto si no se puede parsear asumimos < 24hs
+      }
+    }
+    const penalizaStrike = horas < 24;
     let newStrikes = (user?.strikes || 0);
     let seMulta = false;
 
@@ -519,6 +531,126 @@ export const mockStore = {
       fecha: new Date().toLocaleDateString('es-AR'),
     });
     localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(reviews));
+    return { success: true };
+  },
+
+  getClientes() {
+    this.init();
+    const defaultClientes = [
+      { id: 1, nombre: 'Rodrigo Bozio', telefono: '115135', email: 'cliente@barberazo.com', estado: 'activo', strikes: 2 },
+      { id: 2, nombre: 'Mateo Bertin', telefono: '2352352352', email: 'elcap@utn.com', estado: 'activo', strikes: 0 },
+      { id: 3, nombre: 'Lucas Martino', telefono: '232524524', email: 'multado@barberazo.com', estado: 'multado', strikes: 3 },
+      { id: 4, nombre: 'Alejandro Rozas', telefono: '5675685685', email: 'bloqueado@barberazo.com', estado: 'bloqueado', strikes: 1 },
+    ];
+    try {
+      const raw = localStorage.getItem('barberazo_clientes_list');
+      if (!raw) {
+        localStorage.setItem('barberazo_clientes_list', JSON.stringify(defaultClientes));
+        return defaultClientes;
+      }
+      return JSON.parse(raw);
+    } catch {
+      return defaultClientes;
+    }
+  },
+
+  guardarClientes(clientes) {
+    localStorage.setItem('barberazo_clientes_list', JSON.stringify(clientes));
+  },
+
+  bloquearCliente(clienteId, motivo) {
+    const clientes = this.getClientes();
+    const actualizados = clientes.map(c => c.id === clienteId ? { ...c, estado: 'bloqueado', motivoBloqueo: motivo } : c);
+    this.guardarClientes(actualizados);
+    return { success: true };
+  },
+
+  desbloquearCliente(clienteId) {
+    const clientes = this.getClientes();
+    const actualizados = clientes.map(c => c.id === clienteId ? { ...c, estado: 'activo', motivoBloqueo: '' } : c);
+    this.guardarClientes(actualizados);
+    return { success: true };
+  },
+
+  // Subir comprobante por el cliente
+  subirComprobanteMulta(multaId, archivoInfo) {
+    this.init();
+    const multas = this.getMultas();
+    const actualizadas = multas.map(m => {
+      if (m.id === multaId) {
+        return {
+          ...m,
+          estado: 'Comprobante Subido',
+          comprobante: archivoInfo || {
+            nombre: 'comprobante_transferencia.pdf',
+            fecha: new Date().toLocaleDateString('es-AR'),
+            url: null,
+          }
+        };
+      }
+      return m;
+    });
+    localStorage.setItem(STORAGE_KEYS.MULTAS, JSON.stringify(actualizadas));
+    return { success: true };
+  },
+
+  // Aprobar comprobante por el Dueño
+  aprobarComprobanteMulta(multaId) {
+    this.init();
+    const multas = this.getMultas();
+    const multa = multas.find(m => m.id === multaId);
+    const actualizadas = multas.map(m => m.id === multaId ? { ...m, estado: 'Pagado' } : m);
+    localStorage.setItem(STORAGE_KEYS.MULTAS, JSON.stringify(actualizadas));
+
+    // Reiniciar strikes y estado al cliente en la lista general y en el user actual si coincide
+    if (multa?.clienteEmail) {
+      const email = multa.clienteEmail.toLowerCase();
+      // Actualizar en lista de clientes
+      const clientes = this.getClientes();
+      const clientesActualizados = clientes.map(c => {
+        if (c.email.toLowerCase() === email) {
+          return { ...c, estado: 'activo', strikes: 0 };
+        }
+        return c;
+      });
+      this.guardarClientes(clientesActualizados);
+
+      // Actualizar TEST_ACCOUNTS si existe
+      Object.keys(TEST_ACCOUNTS).forEach(key => {
+        if (TEST_ACCOUNTS[key].email.toLowerCase() === email) {
+          TEST_ACCOUNTS[key].strikes = 0;
+          TEST_ACCOUNTS[key].status = 'Activo';
+        }
+      });
+
+      // Actualizar current user si está logueado
+      const currentUser = this.getCurrentUser();
+      if (currentUser && currentUser.email.toLowerCase() === email) {
+        currentUser.strikes = 0;
+        currentUser.status = 'Activo';
+        this.setCurrentUser(currentUser);
+      }
+    }
+
+    return { success: true };
+  },
+
+  // Rechazar comprobante por el Dueño
+  rechazarComprobanteMulta(multaId, motivoRechazo) {
+    this.init();
+    const multas = this.getMultas();
+    const actualizadas = multas.map(m => {
+      if (m.id === multaId) {
+        return {
+          ...m,
+          estado: 'Pendiente',
+          comprobanteRechazado: true,
+          motivoRechazo: motivoRechazo || 'El monto o los datos de la transferencia no coinciden con la multa.',
+        };
+      }
+      return m;
+    });
+    localStorage.setItem(STORAGE_KEYS.MULTAS, JSON.stringify(actualizadas));
     return { success: true };
   },
 
