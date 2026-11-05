@@ -654,6 +654,134 @@ export const mockStore = {
     return { success: true };
   },
 
+  // --- GESTIÓN DE FECHAS Y HORARIOS (CUU 6.1, 6.2, 6.3) ---
+  getFechasConfig() {
+    this.init();
+    // Noviembre 2026: 30 días. Por defecto: sábados y domingos deshabilitados. Lunes a viernes habilitados de 08:00 a 21:00.
+    // Días de Noviembre 2026:
+    // Dom: 1, 8, 15, 22, 29
+    // Sáb: 7, 14, 21, 28
+    const finesDeSemana = [1, 7, 8, 14, 15, 21, 22, 28, 29];
+    const defaultDias = {};
+    for (let d = 1; d <= 30; d++) {
+      const isFinde = finesDeSemana.includes(d);
+      defaultDias[d] = {
+        dia: d,
+        habilitado: !isFinde,
+        horaDesde: isFinde ? '' : '08:00',
+        horaHasta: isFinde ? '' : '21:00',
+        motivoCancelacion: isFinde ? 'Fin de semana cerrado' : '',
+        empleadosAsignados: isFinde ? [] : ['Franco Barbero', 'Lucas Martino'],
+      };
+    }
+
+    try {
+      const raw = localStorage.getItem('barberazo_fechas_noviembre');
+      if (!raw) {
+        localStorage.setItem('barberazo_fechas_noviembre', JSON.stringify(defaultDias));
+        return defaultDias;
+      }
+      return JSON.parse(raw);
+    } catch {
+      return defaultDias;
+    }
+  },
+
+  guardarFechasConfig(config) {
+    localStorage.setItem('barberazo_fechas_noviembre', JSON.stringify(config));
+  },
+
+  habilitarFecha(dia, horaDesde = '08:00', horaHasta = '21:00') {
+    const config = this.getFechasConfig();
+    config[dia] = {
+      ...(config[dia] || {}),
+      dia: Number(dia),
+      habilitado: true,
+      horaDesde,
+      horaHasta,
+      motivoCancelacion: '',
+    };
+    this.guardarFechasConfig(config);
+    return { success: true };
+  },
+
+  deshabilitarFecha(dia, motivo) {
+    const config = this.getFechasConfig();
+    config[dia] = {
+      ...(config[dia] || {}),
+      dia: Number(dia),
+      habilitado: false,
+      motivoCancelacion: motivo || 'Feriado / Cierre extraordinario',
+    };
+    this.guardarFechasConfig(config);
+
+    // Cancelar turnos asociados a esa fecha si hubiera
+    const turnos = this.getTurnos();
+    const diaStr = String(dia).padStart(2, '0');
+    const turnosCancelados = turnos.map(t => {
+      // Formato fecha puede ser "08/11/2026" o "8 de Noviembre, 2026"
+      if (t.fecha?.includes(`${diaStr}/11/2026`) || t.fecha?.startsWith(`${dia} de Noviembre`)) {
+        return { ...t, estado: 'cancelado_sin_multa' };
+      }
+      return t;
+    });
+    localStorage.setItem(STORAGE_KEYS.TURNOS, JSON.stringify(turnosCancelados));
+
+    return { success: true };
+  },
+
+  asignarEmpleadoAFecha(dia, empleadoNombre, horaDesde, horaHasta) {
+    const config = this.getFechasConfig();
+    const diaObj = config[dia] || { dia: Number(dia), habilitado: true, empleadosAsignados: [] };
+    const empleados = diaObj.empleadosAsignados || [];
+    if (!empleados.includes(empleadoNombre)) {
+      empleados.push(empleadoNombre);
+    }
+    diaObj.empleadosAsignados = empleados;
+    if (horaDesde) diaObj.horaDesde = horaDesde;
+    if (horaHasta) diaObj.horaHasta = horaHasta;
+    config[dia] = diaObj;
+    this.guardarFechasConfig(config);
+    return { success: true };
+  },
+
+  // --- GESTIÓN DE EMPLEADOS Y SERVICIOS (CUU 6.4) ---
+  getEmpleadosList() {
+    this.init();
+    const defaultEmpleados = [
+      { id: 1, nombre: 'Franco Barbero', telefono: '3415551234', email: 'empleado@barberazo.com', rol: 'Barbero Senior', servicios: ['Corte de Pelo', 'Perfilado de Barba', 'Corte + Barba'] },
+      { id: 2, nombre: 'Lucas Martino', telefono: '3415558765', email: 'lucas@barberazo.com', rol: 'Barbero', servicios: ['Corte de Pelo', 'Diseño de Cejas'] },
+      { id: 3, nombre: 'Martín Dueño', telefono: '3415559999', email: 'dueno@barberazo.com', rol: 'Dueño / Estilista', servicios: ['Corte de Pelo', 'Perfilado de Barba', 'Lavado y Peinado', 'Diseño de Cejas'] },
+      { id: 4, nombre: 'Mateo Bertin', telefono: '3415550000', email: 'mateo@barberazo.com', rol: 'Asistente', servicios: ['Lavado y Peinado'] },
+    ];
+    try {
+      const raw = localStorage.getItem('barberazo_empleados_staff');
+      if (!raw) {
+        localStorage.setItem('barberazo_empleados_staff', JSON.stringify(defaultEmpleados));
+        return defaultEmpleados;
+      }
+      return JSON.parse(raw);
+    } catch {
+      return defaultEmpleados;
+    }
+  },
+
+  guardarEmpleadosList(empleados) {
+    localStorage.setItem('barberazo_empleados_staff', JSON.stringify(empleados));
+  },
+
+  vincularServiciosEmpleado(empleadoId, serviciosSeleccionados) {
+    const empleados = this.getEmpleadosList();
+    const actualizados = empleados.map(emp => {
+      if (emp.id === empleadoId) {
+        return { ...emp, servicios: serviciosSeleccionados };
+      }
+      return emp;
+    });
+    this.guardarEmpleadosList(actualizados);
+    return { success: true };
+  },
+
   // --- GESTIÓN DE MULTAS ---
 
   getMultas(userEmail) {
