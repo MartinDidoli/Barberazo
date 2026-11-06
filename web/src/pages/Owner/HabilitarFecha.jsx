@@ -12,7 +12,6 @@ import {
   MenuItem,
   Select,
   FormControl,
-  InputLabel,
   Snackbar,
   Alert,
   Chip,
@@ -40,7 +39,7 @@ export const HabilitarFecha = () => {
   const [modalAsignarOpen, setModalAsignarOpen] = useState(false);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState('');
   const [empleadosList, setEmpleadosList] = useState([]);
-  const [turnoLaboral, setTurnoLaboral] = useState('09:00 - 17:00'); // Turno del empleado (8hs por defecto)
+  const [, setTurnoLaboral] = useState('09:00 - 17:00'); // Turno del empleado (8hs por defecto)
   const [horaEmpleadoDesde, setHoraEmpleadoDesde] = useState('09:00');
   const [horaEmpleadoHasta, setHoraEmpleadoHasta] = useState('17:00');
 
@@ -127,12 +126,13 @@ export const HabilitarFecha = () => {
   };
 
   return (
-    <Box sx={{ minHeight: 'calc(100vh - 70px)', display: 'flex', justifyContent: 'center', p: { xs: 2, md: 4 } }}>
+    <Box sx={{ minHeight: 'calc(100vh - 70px)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', p: { xs: 2, md: 4 } }}>
       <Paper
         elevation={0}
         sx={{
           width: '100%',
           maxWidth: { xs: '100%', md: '1150px', lg: '1350px', xl: '1500px' },
+          height: 'fit-content',
           p: { xs: 2.5, md: 4 },
           borderRadius: 3,
           display: 'flex',
@@ -142,18 +142,33 @@ export const HabilitarFecha = () => {
       >
         {/* ENCABEZADO */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-          <Box>
-            <Typography variant="h5" sx={{ color: 'white', fontWeight: 800, letterSpacing: '0.5px' }}>
-              HABILITAR / DESHABILITAR FECHAS Y HORARIOS
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-              Configuración del calendario laboral, rangos horarios y asignación de personal
-            </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Flecha volver en Mobile */}
+            <Button
+              onClick={() => navigate('/home-staff')}
+              sx={{
+                display: { xs: 'flex', md: 'none' },
+                color: 'white',
+                fontSize: '24px',
+                minWidth: '36px',
+                p: 0,
+              }}
+            >
+              ←
+            </Button>
+            <Box>
+              <Typography variant="h5" sx={{ color: 'white', fontWeight: 800, letterSpacing: '0.5px' }}>
+                HABILITAR / DESHABILITAR FECHAS Y HORARIOS
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                Configuración del calendario laboral, rangos horarios y asignación de personal
+              </Typography>
+            </Box>
           </Box>
           <Button
             variant="outlined"
             onClick={() => navigate('/home-staff')}
-            sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+            sx={{ display: { xs: 'none', md: 'inline-flex' }, borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
           >
             ← Volver a Turnos
           </Button>

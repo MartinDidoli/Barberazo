@@ -92,13 +92,13 @@ export const ServiciosDueno = () => {
       </Paper>
 
       {/* BOTÓN FLOTANTE (Solo Mobile) */}
-      < Fab 
+      <Fab 
         color="primary" 
         aria-label="add" 
         sx={{ display: { xs: 'flex', md: 'none' }, position: 'fixed', bottom: 32, right: 32, backgroundColor: '#0056b3' }}
-        onClick={() => alert('Redirige a CREAR SERVICIO (CUU 7.1)')}
+        onClick={() => navigate('/servicios-dueno/newService')}
       >
-        < Typography sx={{ fontSize: '30px', color: 'white', mt: -0.5 }}>+</Typography>
+        <Typography sx={{ fontSize: '30px', color: 'white', mt: -0.5 }}>+</Typography>
       </Fab>
 
     </Box>

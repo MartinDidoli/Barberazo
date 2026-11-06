@@ -31,6 +31,9 @@ import CloseIcon from '@mui/icons-material/Close';
 export const ClientesDueno = () => {
   const navigate = useNavigate();
 
+  const currentUser = mockStore.getCurrentUser();
+  const esDueno = (currentUser?.role || 'dueño') === 'dueño';
+
   const [clientes, setClientes] = useState([]);
   const [multas, setMultas] = useState([]);
 
@@ -165,58 +168,63 @@ export const ClientesDueno = () => {
           </Alert>
         )}
 
-        <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.08)', flexWrap: 'wrap' }}>
-          {multaPendienteRevision && (
-            <Button
-              variant="contained"
-              color="warning"
-              size="small"
-              startIcon={<VisibilityIcon fontSize="small" />}
-              fullWidth
-              onClick={() => handleVerComprobante(multaPendienteRevision)}
-              sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#000' }}
-            >
-              Controlar Comprobante
-            </Button>
-          )}
+        {(multaPendienteRevision || esDueno) && (
+          <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.08)', flexWrap: 'wrap' }}>
+            {multaPendienteRevision && (
+              <Button
+                variant="contained"
+                color="warning"
+                size="small"
+                startIcon={<VisibilityIcon fontSize="small" />}
+                fullWidth
+                onClick={() => handleVerComprobante(multaPendienteRevision)}
+                sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#000' }}
+              >
+                Controlar Comprobante
+              </Button>
+            )}
 
-          {cliente.estado === 'bloqueado' ? (
-            <Button
-              variant="contained"
-              color="success"
-              size="small"
-              fullWidth
-              startIcon={<CheckCircleIcon fontSize="small" />}
-              onClick={() => handleDesbloquear(cliente)}
-              sx={{ fontWeight: 700, fontSize: '0.8rem' }}
-            >
-              Desbloquear
-            </Button>
-          ) : (
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              fullWidth
-              startIcon={<BlockIcon fontSize="small" />}
-              onClick={() => handleOpenBloqueo(cliente)}
-              sx={{ fontWeight: 700, fontSize: '0.8rem', borderWidth: 2, '&:hover': { borderWidth: 2 } }}
-            >
-              Bloquear
-            </Button>
-          )}
-        </Box>
+            {esDueno && (
+              cliente.estado === 'bloqueado' ? (
+                <Button
+                  variant="contained"
+                  color="success"
+                  size="small"
+                  fullWidth
+                  startIcon={<CheckCircleIcon fontSize="small" />}
+                  onClick={() => handleDesbloquear(cliente)}
+                  sx={{ fontWeight: 700, fontSize: '0.8rem' }}
+                >
+                  Desbloquear
+                </Button>
+              ) : (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  fullWidth
+                  startIcon={<BlockIcon fontSize="small" />}
+                  onClick={() => handleOpenBloqueo(cliente)}
+                  sx={{ fontWeight: 700, fontSize: '0.8rem', borderWidth: 2, '&:hover': { borderWidth: 2 } }}
+                >
+                  Bloquear
+                </Button>
+              )
+            )}
+          </Box>
+        )}
       </Paper>
     );
   };
 
   return (
-    <Box sx={{ minHeight: 'calc(100vh - 70px)', display: 'flex', justifyContent: 'center', p: { xs: 2, md: 4 } }}>
+    <Box sx={{ minHeight: 'calc(100vh - 70px)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', p: { xs: 2, md: 4 } }}>
       <Paper
         elevation={0}
         sx={{
           width: '100%',
           maxWidth: { xs: '100%', md: '1200px', lg: '1450px', xl: '1600px' },
+          height: 'fit-content',
           p: { xs: 2.5, md: 4 },
           borderRadius: 3,
           display: 'flex',
@@ -276,7 +284,7 @@ export const ClientesDueno = () => {
                   <TableCell>Email</TableCell>
                   <TableCell align="center">Estado de Cuenta</TableCell>
                   <TableCell align="center">Comprobante de Pago</TableCell>
-                  <TableCell align="center">Acciones</TableCell>
+                  {esDueno && <TableCell align="center">Acciones</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -309,35 +317,37 @@ export const ClientesDueno = () => {
                           </Typography>
                         )}
                       </TableCell>
-                      <TableCell align="center">
-                        {cliente.estado === 'bloqueado' ? (
-                          <Tooltip title="Desbloquear acceso al cliente">
-                            <Button
-                              variant="contained"
-                              color="success"
-                              size="small"
-                              startIcon={<CheckCircleIcon fontSize="small" />}
-                              onClick={() => handleDesbloquear(cliente)}
-                              sx={{ fontWeight: 700, fontSize: '0.8rem' }}
-                            >
-                              Desbloquear
-                            </Button>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip title="Bloquear cuenta de cliente">
-                            <Button
-                              variant="outlined"
-                              color="error"
-                              size="small"
-                              startIcon={<BlockIcon fontSize="small" />}
-                              onClick={() => handleOpenBloqueo(cliente)}
-                              sx={{ fontWeight: 700, fontSize: '0.8rem', borderWidth: 2, '&:hover': { borderWidth: 2 } }}
-                            >
-                              Bloquear
-                            </Button>
-                          </Tooltip>
-                        )}
-                      </TableCell>
+                      {esDueno && (
+                        <TableCell align="center">
+                          {cliente.estado === 'bloqueado' ? (
+                            <Tooltip title="Desbloquear acceso al cliente">
+                              <Button
+                                variant="contained"
+                                color="success"
+                                size="small"
+                                startIcon={<CheckCircleIcon fontSize="small" />}
+                                onClick={() => handleDesbloquear(cliente)}
+                                sx={{ fontWeight: 700, fontSize: '0.8rem' }}
+                              >
+                                Desbloquear
+                              </Button>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip title="Bloquear cuenta de cliente">
+                              <Button
+                                variant="outlined"
+                                color="error"
+                                size="small"
+                                startIcon={<BlockIcon fontSize="small" />}
+                                onClick={() => handleOpenBloqueo(cliente)}
+                                sx={{ fontWeight: 700, fontSize: '0.8rem', borderWidth: 2, '&:hover': { borderWidth: 2 } }}
+                              >
+                                Bloquear
+                              </Button>
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}
