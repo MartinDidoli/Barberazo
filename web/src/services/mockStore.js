@@ -932,6 +932,45 @@ export const mockStore = {
     return { success: true };
   },
 
+  // CUU 9.2: Validar si el cliente puede eliminar su perfil
+  validarEliminarPerfilCliente(userEmail) {
+    this.init();
+    const email = (userEmail || '').trim().toLowerCase();
+
+    // 1. Chequear si posee turnos pendientes
+    const turnos = this.getTurnos();
+    const turnosPendientes = turnos.filter(t => 
+      (t.clienteEmail || '').toLowerCase() === email && t.estado === 'pendiente'
+    );
+
+    // 2. Chequear si posee multas sin abonar (Pendiente o Comprobante Subido)
+    const multas = this.getMultas(email);
+    const multasSinAbonar = multas.filter(m => m.estado === 'Pendiente' || m.estado === 'Comprobante Subido');
+
+    if (turnosPendientes.length > 0 && multasSinAbonar.length > 0) {
+      return {
+        puedeEliminar: false,
+        error: `No es posible eliminar la cuenta mientras posea turnos pendientes (${turnosPendientes.length} turno/s) y hasta que abone las multas impagas registradas.`,
+      };
+    }
+
+    if (turnosPendientes.length > 0) {
+      return {
+        puedeEliminar: false,
+        error: `No es posible eliminar la cuenta mientras posea turnos pendientes de cumplimiento (${turnosPendientes.length} turno/s activo/s). Cancelá tus turnos previamente.`,
+      };
+    }
+
+    if (multasSinAbonar.length > 0) {
+      return {
+        puedeEliminar: false,
+        error: 'No es posible eliminar la cuenta hasta que abone la multa pendiente de pago.',
+      };
+    }
+
+    return { puedeEliminar: true };
+  },
+
   // --- GESTIÓN DE MULTAS ---
 
   getMultas(userEmail) {

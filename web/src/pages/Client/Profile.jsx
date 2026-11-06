@@ -28,6 +28,7 @@ export const Profile = () => {
 
   const [alertNotice, setAlertNotice] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteBlockedError, setDeleteBlockedError] = useState("");
 
   useEffect(() => {
     const user = mockStore.getCurrentUser();
@@ -96,8 +97,22 @@ export const Profile = () => {
     setIsEditing(false);
   };
 
-  // CUU 9.2: Eliminar Perfil
+  // CUU 9.2: Abrir modal y validar condiciones para eliminar perfil
+  const handleOpenDelete = () => {
+    const user = mockStore.getCurrentUser();
+    const validacion = mockStore.validarEliminarPerfilCliente(user?.email || email);
+    
+    if (!validacion.puedeEliminar) {
+      setDeleteBlockedError(validacion.error);
+    } else {
+      setDeleteBlockedError("");
+    }
+    setDeleteDialogOpen(true);
+  };
+
+  // CUU 9.2: Confirmar baja de la cuenta
   const handleConfirmDelete = () => {
+    if (deleteBlockedError) return;
     setDeleteDialogOpen(false);
     mockStore.logout();
     navigate("/login");
@@ -336,11 +351,11 @@ export const Profile = () => {
               </Button>
             )}
 
-            {/* CUU 9.2: ELIMINAR PERFIL */}
+            {/* ELIMINAR PERFIL */}
             <Button
               variant="contained"
               color="error"
-              onClick={() => setDeleteDialogOpen(true)}
+              onClick={handleOpenDelete}
               sx={{
                 borderRadius: borderRadius,
                 fontWeight: 700,
@@ -367,7 +382,7 @@ export const Profile = () => {
         </Box>
       </Paper>
 
-      {/* MODAL DE CONFIRMACIÓN PARA ELIMINAR PERFIL (CUU 9.2) */}
+      {/* MODAL DE CONFIRMACIÓN PARA ELIMINAR PERFIL */}
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
@@ -375,7 +390,7 @@ export const Profile = () => {
           paper: {
             sx: {
               width: "100%",
-              maxWidth: "440px",
+              maxWidth: "460px",
               p: 2,
               borderRadius: 3,
               backgroundColor: "#161b22",
@@ -387,9 +402,20 @@ export const Profile = () => {
         <DialogTitle sx={{ color: "#ef5350", fontWeight: 800, textAlign: "center" }}>
           Eliminar Perfil
         </DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ color: "white", textAlign: "center" }}>
-            ¿Estás seguro de que querés eliminar tu perfil? Esta acción cerrará tu sesión y dará de baja tu cuenta.
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {/* Camino Alternativo 1.a / 1.a.1: Turnos pendientes o multas sin abonar */}
+          {deleteBlockedError ? (
+            <Alert severity="error" sx={{ borderRadius: 2 }}>
+              {deleteBlockedError}
+            </Alert>
+          ) : (
+            <Typography variant="body1" sx={{ color: "white", textAlign: "center" }}>
+              ¿Estás seguro de que querés eliminar tu perfil? Esta acción cerrará tu sesión y dará de baja tu cuenta de forma permanente.
+            </Typography>
+          )}
+
+          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.5)", textAlign: "center" }}>
+            * El sistema valida que no existan reservas activas ni sanciones impagas antes de procesar la baja.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 1, display: "flex", gap: 1.5 }}>
@@ -399,17 +425,19 @@ export const Profile = () => {
             onClick={() => setDeleteDialogOpen(false)}
             sx={{ borderColor: "rgba(255,255,255,0.3)", color: "white", borderRadius: borderRadius }}
           >
-            Cancelar
+            {deleteBlockedError ? "Entendido / Volver" : "Cancelar"}
           </Button>
-          <Button
-            variant="contained"
-            color="error"
-            fullWidth
-            onClick={handleConfirmDelete}
-            sx={{ fontWeight: 700, borderRadius: borderRadius }}
-          >
-            Confirmar Baja
-          </Button>
+          {!deleteBlockedError && (
+            <Button
+              variant="contained"
+              color="error"
+              fullWidth
+              onClick={handleConfirmDelete}
+              sx={{ fontWeight: 700, borderRadius: borderRadius }}
+            >
+              Confirmar Baja
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>
