@@ -525,13 +525,40 @@ export const mockStore = {
     const reviewsRaw = localStorage.getItem(STORAGE_KEYS.REVIEWS) || '[]';
     const reviews = JSON.parse(reviewsRaw);
     reviews.push({
+      id: Date.now(),
       turnoId,
+      cliente: turnoActual.cliente || 'Rodrigo Bozio',
+      clienteEmail: turnoActual.clienteEmail || 'cliente@barberazo.com',
+      barbero: turnoActual.barbero || 'Franco Barbero',
+      servicio: Array.isArray(turnoActual.servicios) ? turnoActual.servicios.join(' + ') : turnoActual.servicio || 'Corte de Pelo',
       rating,
       comment,
       fecha: new Date().toLocaleDateString('es-AR'),
     });
     localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(reviews));
     return { success: true };
+  },
+
+  getReviews() {
+    this.init();
+    const defaultReviews = [
+      { id: 1, cliente: 'Rodrigo Bozio', barbero: 'Franco Barbero', servicio: 'Corte + Barba', rating: 5, comment: 'Excelente atención de Franco, muy detallista con el degradé.', fecha: '28/10/2026' },
+      { id: 2, cliente: 'Lucas Martino', barbero: 'Franco Barbero', servicio: 'Perfilado de Barba', rating: 4, comment: 'Muy buen trabajo y rápido. El local impecable.', fecha: '25/10/2026' },
+      { id: 3, cliente: 'Mateo Bertin', barbero: 'Martín Dueño', servicio: 'Corte Clásico', rating: 4, comment: 'Quedó muy prolijo. Recomendado.', fecha: '20/10/2026' },
+      { id: 4, cliente: 'Martín Didoli', barbero: 'Lucas Martino', servicio: 'Diseño de Cejas', rating: 3, comment: 'El servicio estuvo bien aunque hubo 10 minutos de demora.', fecha: '15/10/2026' },
+      { id: 5, cliente: 'Alejandro Rozas', barbero: 'Franco Barbero', servicio: 'Lavado y Peinado', rating: 5, comment: 'Puntualidad y gran trato, como siempre.', fecha: '10/10/2026' },
+    ];
+
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.REVIEWS);
+      if (!raw || JSON.parse(raw).length === 0) {
+        localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(defaultReviews));
+        return defaultReviews;
+      }
+      return JSON.parse(raw);
+    } catch {
+      return defaultReviews;
+    }
   },
 
   getClientes() {
@@ -768,6 +795,129 @@ export const mockStore = {
 
   guardarEmpleadosList(empleados) {
     localStorage.setItem('barberazo_empleados_staff', JSON.stringify(empleados));
+  },
+
+  // CUU 10.1: Crear empleado
+  crearEmpleado({ nombre, apellido, email, telefono, password }) {
+    this.init();
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanNombre = (nombre || '').trim();
+    const cleanApellido = (apellido || '').trim();
+    const cleanTel = (telefono || '').trim();
+    const cleanPass = (password || '').trim();
+
+    // 1.b Validación de datos
+    if (!cleanNombre || !cleanApellido || !cleanEmail || !cleanPass) {
+      return { error: 'Por favor completá todos los campos requeridos.' };
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return { error: 'El formato de correo electrónico no es válido.' };
+    }
+
+    if (cleanPass.length < 6) {
+      return { error: 'La contraseña debe tener al menos 6 caracteres.' };
+    }
+
+    // 1.a Verificar si ya existe empleado con ese email
+    const empleados = this.getEmpleadosList();
+    if (empleados.some(e => e.email.toLowerCase() === cleanEmail)) {
+      return { error: 'El empleado ya se encuentra registrado en el sistema con el mismo email.' };
+    }
+
+    // También chequear en clientes o TEST_ACCOUNTS
+    if (Object.values(TEST_ACCOUNTS).some(a => a.email.toLowerCase() === cleanEmail)) {
+      return { error: 'El email ingresado ya se encuentra en uso por otra cuenta en el sistema.' };
+    }
+
+    const nuevoEmpleado = {
+      id: Date.now(),
+      nombre: `${cleanNombre} ${cleanApellido}`,
+      nombreSolo: cleanNombre,
+      apellidoSolo: cleanApellido,
+      email: cleanEmail,
+      telefono: cleanTel || 'Sin teléfono',
+      rol: 'Barbero',
+      servicios: ['Corte de Pelo'],
+    };
+
+    const actualizados = [...empleados, nuevoEmpleado];
+    this.guardarEmpleadosList(actualizados);
+    return { success: true, empleado: nuevoEmpleado };
+  },
+
+  // CUU 10.2: Modificar empleado
+  modificarEmpleado(id, { nombre, apellido, email, telefono }) {
+    this.init();
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanNombre = (nombre || '').trim();
+    const cleanApellido = (apellido || '').trim();
+    const cleanTel = (telefono || '').trim();
+
+    // 1.b Validación de datos
+    if (!cleanNombre || !cleanApellido || !cleanEmail) {
+      return { error: 'Por favor completá los campos obligatorios (nombre, apellido y email).' };
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return { error: 'El formato de correo electrónico no es válido.' };
+    }
+
+    const empleados = this.getEmpleadosList();
+    const empActual = empleados.find(e => e.id === Number(id));
+    if (!empActual) return { error: 'Empleado no encontrado.' };
+
+    // 1.a Verificar email duplicado en otros empleados o usuarios
+    const emailEnUsoPorOtro = empleados.some(e => e.id !== Number(id) && e.email.toLowerCase() === cleanEmail);
+    if (emailEnUsoPorOtro) {
+      return { error: 'El email ingresado ya pertenece a otro empleado registrado.' };
+    }
+
+    const actualizados = empleados.map(e => {
+      if (e.id === Number(id)) {
+        return {
+          ...e,
+          nombre: `${cleanNombre} ${cleanApellido}`.trim(),
+          nombreSolo: cleanNombre,
+          apellidoSolo: cleanApellido,
+          email: cleanEmail,
+          telefono: cleanTel,
+        };
+      }
+      return e;
+    });
+
+    this.guardarEmpleadosList(actualizados);
+    return { success: true };
+  },
+
+  // CUU 10.3: Eliminar empleado con validación de turnos futuros
+  eliminarEmpleado(empleadoId) {
+    this.init();
+    const empleados = this.getEmpleadosList();
+    const emp = empleados.find(e => e.id === Number(empleadoId));
+    if (!emp) return { error: 'Empleado no encontrado.' };
+
+    // 1.a Validar turnos futuros pendientes asignados a este empleado
+    const turnos = this.getTurnos();
+    const turnosPendientes = turnos.filter(t => {
+      const mismoBarbero = (t.barbero || '').toLowerCase() === (emp.nombre || '').toLowerCase();
+      const estaPendiente = t.estado === 'pendiente';
+      return mismoBarbero && estaPendiente;
+    });
+
+    if (turnosPendientes.length > 0) {
+      return {
+        error: `No es posible eliminar al empleado mientras tenga turnos asignados pendientes de cumplimiento (${turnosPendientes.length} turno(s) pendientes).`,
+        turnosPendientes,
+      };
+    }
+
+    const actualizados = empleados.filter(e => e.id !== Number(empleadoId));
+    this.guardarEmpleadosList(actualizados);
+    return { success: true };
   },
 
   vincularServiciosEmpleado(empleadoId, serviciosSeleccionados) {

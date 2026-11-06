@@ -20,12 +20,14 @@ import {
   FormControlLabel,
   Checkbox,
   Alert,
+  Snackbar,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { mockStore } from "../../services/mockStore";
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 
 export const EmpleadosDueno = () => {
   const navigate = useNavigate();
@@ -37,8 +39,15 @@ export const EmpleadosDueno = () => {
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
   const [serviciosElegidos, setServiciosElegidos] = useState([]);
 
-  // Modal Eliminar
+  // Modal CUU 10.3 (Eliminar Empleado)
   const [modalEliminarOpen, setModalEliminarOpen] = useState(false);
+  const [empleadoAEliminar, setEmpleadoAEliminar] = useState(null);
+  const [errorEliminar, setErrorEliminar] = useState('');
+
+  // Notificaciones Snackbar
+  const [snackOpen, setSnackOpen] = useState(false);
+  const [snackMessage, setSnackMessage] = useState('');
+  const [snackSeverity, setSnackSeverity] = useState('success');
 
   // Lista de todos los servicios del local disponibles
   const serviciosDisponibles = [
@@ -57,7 +66,35 @@ export const EmpleadosDueno = () => {
     loadData();
   }, []);
 
-  // CUU 6.4: Abrir configuración de servicios del empleado
+  // CUU 10.2: Navegar a editar empleado
+  const handleEditarEmpleado = (empleado) => {
+    navigate('/empleados-dueno/newEmployee', { state: { empleado } });
+  };
+
+  // CUU 10.3: Abrir confirmación de eliminación
+  const handleOpenEliminar = (empleado) => {
+    setEmpleadoAEliminar(empleado);
+    setErrorEliminar('');
+    setModalEliminarOpen(true);
+  };
+
+  const handleConfirmarEliminar = () => {
+    if (!empleadoAEliminar) return;
+    const res = mockStore.eliminarEmpleado(empleadoAEliminar.id);
+
+    if (res.error) {
+      setErrorEliminar(res.error);
+      return;
+    }
+
+    loadData();
+    setModalEliminarOpen(false);
+    setSnackMessage(`Empleado ${empleadoAEliminar.nombre} eliminado del sistema.`);
+    setSnackSeverity('info');
+    setSnackOpen(true);
+  };
+
+  // CUU 6.4: Servicios
   const handleOpenServicios = (empleado) => {
     setEmpleadoSeleccionado(empleado);
     setServiciosElegidos(empleado.servicios || []);
@@ -79,9 +116,12 @@ export const EmpleadosDueno = () => {
     mockStore.vincularServiciosEmpleado(empleadoSeleccionado.id, serviciosElegidos);
     loadData();
     setModalServiciosOpen(false);
+    setSnackMessage(`Servicios vinculados correctamente a ${empleadoSeleccionado.nombre}.`);
+    setSnackSeverity('success');
+    setSnackOpen(true);
   };
 
-  // Mobile Card
+  // Mobile Card Component
   const EmpleadoCard = ({ empleado }) => (
     <Paper
       elevation={0}
@@ -139,17 +179,30 @@ export const EmpleadosDueno = () => {
           onClick={() => handleOpenServicios(empleado)}
           sx={{ fontWeight: 700, backgroundColor: '#1976d2', fontSize: '0.8rem' }}
         >
-          Servicios (CUU 6.4)
+          Servicios
         </Button>
-        <Button
-          variant="outlined"
-          color="error"
-          size="small"
-          onClick={() => setModalEliminarOpen(true)}
-          sx={{ fontWeight: 700, minWidth: 40 }}
-        >
-          <DeleteIcon fontSize="small" />
-        </Button>
+        <Tooltip title="Editar datos del empleado">
+          <Button
+            variant="outlined"
+            color="success"
+            size="small"
+            onClick={() => handleEditarEmpleado(empleado)}
+            sx={{ fontWeight: 700, minWidth: 44, borderColor: '#4caf50', color: '#81c784' }}
+          >
+            <EditIcon fontSize="small" />
+          </Button>
+        </Tooltip>
+        <Tooltip title="Eliminar empleado">
+          <Button
+            variant="outlined"
+            color="error"
+            size="small"
+            onClick={() => handleOpenEliminar(empleado)}
+            sx={{ fontWeight: 700, minWidth: 44, borderWidth: 1.5 }}
+          >
+            <DeleteIcon fontSize="small" />
+          </Button>
+        </Tooltip>
       </Box>
     </Paper>
   );
@@ -175,7 +228,7 @@ export const EmpleadosDueno = () => {
               GESTIÓN DE EMPLEADOS
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-              Administrá el personal y vinculá qué servicios puede atender cada barbero (CUU 6.4)
+              Alta, modificación, baja y vinculación de servicios del personal
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -218,9 +271,9 @@ export const EmpleadosDueno = () => {
             <Table sx={{ minWidth: 750 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell>Empleado / Especialidad</TableCell>
+                  <TableCell>Empleado / Cargo</TableCell>
                   <TableCell>Contacto</TableCell>
-                  <TableCell>Servicios Habilitados para Atender</TableCell>
+                  <TableCell>Servicios Habilitados</TableCell>
                   <TableCell align="center">Acciones</TableCell>
                 </TableRow>
               </TableHead>
@@ -256,7 +309,7 @@ export const EmpleadosDueno = () => {
                     </TableCell>
                     <TableCell align="center">
                       <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-                        <Tooltip title="Vincular o desvincular servicios a este empleado (CUU 6.4)">
+                        <Tooltip title="Vincular servicios">
                           <Button
                             variant="contained"
                             color="primary"
@@ -268,12 +321,26 @@ export const EmpleadosDueno = () => {
                             Servicios
                           </Button>
                         </Tooltip>
+
+                        <Tooltip title="Modificar datos del empleado">
+                          <Button
+                            variant="contained"
+                            color="success"
+                            size="small"
+                            startIcon={<EditIcon fontSize="small" />}
+                            onClick={() => handleEditarEmpleado(empleado)}
+                            sx={{ fontWeight: 700, fontSize: '0.75rem' }}
+                          >
+                            Editar
+                          </Button>
+                        </Tooltip>
+
                         <Tooltip title="Eliminar empleado">
                           <Button
                             variant="outlined"
                             color="error"
                             size="small"
-                            onClick={() => setModalEliminarOpen(true)}
+                            onClick={() => handleOpenEliminar(empleado)}
                             sx={{ fontWeight: 700, minWidth: 36, px: 1, borderWidth: 1.5 }}
                           >
                             <DeleteIcon fontSize="small" />
@@ -300,7 +367,53 @@ export const EmpleadosDueno = () => {
         </Box>
       </Paper>
 
-      {/* MODAL CUU 6.4: VINCULAR SERVICIOS CON EMPLEADO */}
+      {/* MODAL CUU 10.3: ELIMINAR EMPLEADO */}
+      <Dialog
+        open={modalEliminarOpen}
+        onClose={() => setModalEliminarOpen(false)}
+        slotProps={{
+          paper: {
+            sx: {
+              width: '100%',
+              maxWidth: '460px',
+              p: 2,
+              borderRadius: 3,
+              backgroundColor: '#161b22',
+              border: '1px solid rgba(255,255,255,0.15)',
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: '#ef5350', fontWeight: 800, textAlign: 'center' }}>
+          Eliminar Empleado
+        </DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Typography variant="body2" sx={{ color: 'white', textAlign: 'center' }}>
+            ¿Estás seguro de que deseás eliminar a <strong style={{ color: '#ff8a80' }}>{empleadoAEliminar?.nombre}</strong>?
+          </Typography>
+
+          {/* Camino alternativo 1.a / 1.a.1: Turnos pendientes */}
+          {errorEliminar && (
+            <Alert severity="error" sx={{ borderRadius: 2 }}>
+              {errorEliminar}
+            </Alert>
+          )}
+
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>
+            * El sistema valida que el empleado no posea futuros turnos asignados antes de registrar la baja.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, display: 'flex', gap: 1.5 }}>
+          <Button variant="outlined" fullWidth onClick={() => setModalEliminarOpen(false)} sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}>
+            Cancelar
+          </Button>
+          <Button variant="contained" color="error" fullWidth onClick={handleConfirmarEliminar} sx={{ fontWeight: 800 }}>
+            Confirmar Eliminación
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* MODAL CUU 6.4: VINCULAR SERVICIOS */}
       <Dialog
         open={modalServiciosOpen}
         onClose={() => setModalServiciosOpen(false)}
@@ -360,10 +473,6 @@ export const EmpleadosDueno = () => {
               })}
             </FormGroup>
           </Paper>
-
-          <Alert severity="info" sx={{ fontSize: '11px', backgroundColor: 'rgba(25, 118, 210, 0.1)', color: '#90caf9' }}>
-            Al confirmar, el sistema registrará la vinculación de servicios con el empleado para que esté disponible en las reservas de clientes.
-          </Alert>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, display: 'flex', gap: 1.5 }}>
           <Button variant="outlined" fullWidth onClick={() => setModalServiciosOpen(false)} sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}>
@@ -381,40 +490,16 @@ export const EmpleadosDueno = () => {
         </DialogActions>
       </Dialog>
 
-      {/* MODAL ELIMINAR EMPLEADO */}
-      <Dialog
-        open={modalEliminarOpen}
-        onClose={() => setModalEliminarOpen(false)}
-        slotProps={{
-          paper: {
-            sx: {
-              width: '100%',
-              maxWidth: '420px',
-              p: 2,
-              borderRadius: 3,
-              backgroundColor: '#161b22',
-              border: '1px solid rgba(255,255,255,0.15)',
-            },
-          },
-        }}
+      {/* SNACKBAR */}
+      <Snackbar
+        open={snackOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackOpen(false)}
       >
-        <DialogTitle sx={{ color: '#ef5350', fontWeight: 800, textAlign: 'center' }}>
-          Eliminar Empleado
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ color: 'white', textAlign: 'center' }}>
-            ¿Estás seguro de que deseas eliminar a este empleado del sistema?
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, display: 'flex', gap: 1.5 }}>
-          <Button variant="outlined" fullWidth onClick={() => setModalEliminarOpen(false)} sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}>
-            Cancelar
-          </Button>
-          <Button variant="contained" color="error" fullWidth onClick={() => setModalEliminarOpen(false)} sx={{ fontWeight: 800 }}>
-            Eliminar
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <Alert severity={snackSeverity} sx={{ width: '100%', fontWeight: 600 }}>
+          {snackMessage}
+        </Alert>
+      </Snackbar>
 
     </Box>
   );

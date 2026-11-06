@@ -311,7 +311,7 @@ export const ClientesDueno = () => {
                       </TableCell>
                       <TableCell align="center">
                         {cliente.estado === 'bloqueado' ? (
-                          <Tooltip title="Desbloquear acceso al cliente (CUU 5.2)">
+                          <Tooltip title="Desbloquear acceso al cliente">
                             <Button
                               variant="contained"
                               color="success"
@@ -324,7 +324,7 @@ export const ClientesDueno = () => {
                             </Button>
                           </Tooltip>
                         ) : (
-                          <Tooltip title="Bloquear cuenta de cliente (CUU 5.1)">
+                          <Tooltip title="Bloquear cuenta de cliente">
                             <Button
                               variant="outlined"
                               color="error"

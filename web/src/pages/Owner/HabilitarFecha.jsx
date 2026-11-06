@@ -147,7 +147,7 @@ export const HabilitarFecha = () => {
               HABILITAR / DESHABILITAR FECHAS Y HORARIOS
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-              Configuración del calendario laboral, rangos horarios y asignación de personal (CUU 6.1 - 6.3)
+              Configuración del calendario laboral, rangos horarios y asignación de personal
             </Typography>
           </Box>
           <Button
@@ -331,7 +331,7 @@ export const HabilitarFecha = () => {
 
             {/* BOTONES HABILITAR / DESHABILITAR (CUU 6.1 Y 6.2) */}
             <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-              <Tooltip title="Inhabilita la fecha y cancela turnos con aviso (CUU 6.2)">
+              <Tooltip title="Inhabilita la fecha y cancela turnos con aviso">
                 <Button
                   variant="contained"
                   color="error"
@@ -344,7 +344,7 @@ export const HabilitarFecha = () => {
                 </Button>
               </Tooltip>
 
-              <Tooltip title="Habilita la fecha con el rango horario especificado (CUU 6.1)">
+              <Tooltip title="Habilita la fecha con el rango horario especificado">
                 <Button
                   variant="contained"
                   color="success"
