@@ -16,12 +16,15 @@ import {
   Alert,
   Chip,
   Tooltip,
+  IconButton,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { mockStore } from "../../services/mockStore";
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BlockIcon from '@mui/icons-material/Block';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 export const HabilitarFecha = () => {
   const navigate = useNavigate();
@@ -36,12 +39,14 @@ export const HabilitarFecha = () => {
   const [modalDeshabilitarOpen, setModalDeshabilitarOpen] = useState(false);
   const [motivoCancelacion, setMotivoCancelacion] = useState('');
 
+  // Modal Asignar/Modificar Empleado (CUU 6.3)
   const [modalAsignarOpen, setModalAsignarOpen] = useState(false);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState('');
   const [empleadosList, setEmpleadosList] = useState([]);
-  const [, setTurnoLaboral] = useState('09:00 - 17:00'); // Turno del empleado (8hs por defecto)
   const [horaEmpleadoDesde, setHoraEmpleadoDesde] = useState('09:00');
   const [horaEmpleadoHasta, setHoraEmpleadoHasta] = useState('17:00');
+  const [isModificandoHorario, setIsModificandoHorario] = useState(false);
+  const [avisoHorarioExistente, setAvisoHorarioExistente] = useState('');
 
   // Notificaciones
   const [snackOpen, setSnackOpen] = useState(false);
@@ -105,34 +110,79 @@ export const HabilitarFecha = () => {
     setSnackOpen(true);
   };
 
-  // CUU 6.3: Asignar empleado
+  // CUU 6.3: Asignar o Modificar empleado
   const handleOpenAsignar = () => {
-    setEmpleadoSeleccionado(empleadosList[0]?.nombre || 'Franco Barbero');
-    setHoraEmpleadoDesde('09:00');
-    setHoraEmpleadoHasta('17:00');
-    setTurnoLaboral('09:00 - 17:00 (Turno Mañana/Tarde - 8 hs)');
+    const primerEmpleado = empleadosList[0]?.nombre || 'Franco Barbero';
+    setEmpleadoSeleccionado(primerEmpleado);
+    chequearHorarioEmpleado(primerEmpleado);
     setModalAsignarOpen(true);
+  };
+
+  // Detectar si el empleado ya tiene horario asignado en este día (Camino Alternativo 1.a)
+  const chequearHorarioEmpleado = (nombreEmp) => {
+    const asignados = diaActualInfo.empleadosAsignados || [];
+    const asignacion = asignados.find(e => (typeof e === 'string' ? e : e.nombre) === nombreEmp);
+
+    if (asignacion) {
+      setIsModificandoHorario(true);
+      const horarioStr = typeof asignacion === 'string' ? '09:00 - 17:00' : asignacion.horario;
+      const [desde = '09:00', hasta = '17:00'] = horarioStr.split('-').map(s => s.trim().replace('hs', '').trim());
+      setHoraEmpleadoDesde(desde);
+      setHoraEmpleadoHasta(hasta);
+      setAvisoHorarioExistente(`El empleado ya posee horario asignado (${horarioStr} hs). Podés modificarlo o desasignarlo.`);
+    } else {
+      setIsModificandoHorario(false);
+      setHoraEmpleadoDesde('09:00');
+      setHoraEmpleadoHasta('17:00');
+      setAvisoHorarioExistente('');
+    }
+  };
+
+  const handleChangeEmpleadoSelect = (nuevoNombre) => {
+    setEmpleadoSeleccionado(nuevoNombre);
+    chequearHorarioEmpleado(nuevoNombre);
+  };
+
+  const handleEditarDirecto = (asignacion) => {
+    const nombre = typeof asignacion === 'string' ? asignacion : asignacion.nombre;
+    setEmpleadoSeleccionado(nombre);
+    chequearHorarioEmpleado(nombre);
+    setModalAsignarOpen(true);
+  };
+
+  const handleDesasignar = (asignacion) => {
+    const nombre = typeof asignacion === 'string' ? asignacion : asignacion.nombre;
+    mockStore.desasignarEmpleadoDeFecha(selectedDay, nombre);
+    loadData();
+    setSnackMessage(`Horario de ${nombre} eliminado para el día ${selectedDay} de Noviembre.`);
+    setSnackSeverity('info');
+    setSnackOpen(true);
   };
 
   const handleConfirmarAsignar = () => {
     if (!empleadoSeleccionado) return;
     const rangoAsignado = `${horaEmpleadoDesde} - ${horaEmpleadoHasta}`;
-    mockStore.asignarEmpleadoAFecha(selectedDay, empleadoSeleccionado, rangoAsignado);
+    const res = mockStore.asignarEmpleadoAFecha(selectedDay, empleadoSeleccionado, rangoAsignado);
     loadData();
     setModalAsignarOpen(false);
-    setSnackMessage(`Empleado ${empleadoSeleccionado} asignado para el ${selectedDay} de Noviembre en el turno ${rangoAsignado} hs.`);
-    setSnackSeverity('info');
+    
+    if (res.fueModificado) {
+      setSnackMessage(`Horario laboral de ${empleadoSeleccionado} modificado a ${rangoAsignado} hs.`);
+      setSnackSeverity('success');
+    } else {
+      setSnackMessage(`Empleado ${empleadoSeleccionado} asignado al ${selectedDay} de Noviembre (${rangoAsignado} hs).`);
+      setSnackSeverity('info');
+    }
     setSnackOpen(true);
   };
 
   return (
-    <Box sx={{ minHeight: 'calc(100vh - 70px)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', p: { xs: 2, md: 4 } }}>
+    <Box sx={{ minHeight: 'calc(100vh - 70px)', display: 'flex', justifyContent: 'center', p: { xs: 2, md: 4 } }}>
       <Paper
         elevation={0}
         sx={{
           width: '100%',
           maxWidth: { xs: '100%', md: '1150px', lg: '1350px', xl: '1500px' },
-          height: 'fit-content',
           p: { xs: 2.5, md: 4 },
           borderRadius: 3,
           display: 'flex',
@@ -142,33 +192,18 @@ export const HabilitarFecha = () => {
       >
         {/* ENCABEZADO */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {/* Flecha volver en Mobile */}
-            <Button
-              onClick={() => navigate('/home-staff')}
-              sx={{
-                display: { xs: 'flex', md: 'none' },
-                color: 'white',
-                fontSize: '24px',
-                minWidth: '36px',
-                p: 0,
-              }}
-            >
-              ←
-            </Button>
-            <Box>
-              <Typography variant="h5" sx={{ color: 'white', fontWeight: 800, letterSpacing: '0.5px' }}>
-                HABILITAR / DESHABILITAR FECHAS Y HORARIOS
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                Configuración del calendario laboral, rangos horarios y asignación de personal
-              </Typography>
-            </Box>
+          <Box>
+            <Typography variant="h5" sx={{ color: 'white', fontWeight: 800, letterSpacing: '0.5px' }}>
+              HABILITAR / DESHABILITAR FECHAS Y HORARIOS
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+              Configuración del calendario laboral, rangos horarios y asignación de personal
+            </Typography>
           </Box>
           <Button
             variant="outlined"
             onClick={() => navigate('/home-staff')}
-            sx={{ display: { xs: 'none', md: 'inline-flex' }, borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
+            sx={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
           >
             ← Volver a Turnos
           </Button>
@@ -179,8 +214,10 @@ export const HabilitarFecha = () => {
           {diaActualInfo.habilitado ? (
             <Alert severity="success" sx={{ backgroundColor: 'rgba(76, 175, 80, 0.12)', border: '1px solid rgba(76, 175, 80, 0.3)', color: '#c8e6c9' }}>
               <strong>Día Habilitado:</strong> El día {selectedDay} de Noviembre está habilitado para reservas entre las {diaActualInfo.horaDesde} y {diaActualInfo.horaHasta} hs.
-              {diaActualInfo.empleadosAsignados?.length > 0 && (
-                <span> Personal asignado: <strong>{diaActualInfo.empleadosAsignados.join(', ')}</strong></span>
+              {diaActualInfo.empleadosAsignados?.length > 0 ? (
+                <span> Personal de turno: <strong>{diaActualInfo.empleadosAsignados.map(e => typeof e === 'string' ? e : `${e.nombre} (${e.horario})`).join(', ')}</strong></span>
+              ) : (
+                <span> <em>(Sin empleados asignados aún para esta fecha)</em></span>
               )}
             </Alert>
           ) : (
@@ -313,7 +350,7 @@ export const HabilitarFecha = () => {
               />
             </Box>
 
-            {/* RANGO HORARIO */}
+            {/* RANGO HORARIO LOCAL */}
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Box sx={{ flex: 1 }}>
                 <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 600, display: 'block', mb: 0.5 }}>
@@ -344,7 +381,7 @@ export const HabilitarFecha = () => {
               </Box>
             </Box>
 
-            {/* BOTONES HABILITAR / DESHABILITAR (CUU 6.1 Y 6.2) */}
+            {/* BOTONES HABILITAR / DESHABILITAR */}
             <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
               <Tooltip title="Inhabilita la fecha y cancela turnos con aviso">
                 <Button
@@ -373,7 +410,7 @@ export const HabilitarFecha = () => {
               </Tooltip>
             </Box>
 
-            {/* BOTÓN ASIGNAR EMPLEADO (CUU 6.3) */}
+            {/* BOTÓN ASIGNAR EMPLEADO */}
             <Button
               variant="contained"
               fullWidth
@@ -387,19 +424,56 @@ export const HabilitarFecha = () => {
                 '&:hover': { backgroundColor: '#1565c0' },
               }}
             >
-              Asignar Empleado
+              Asignar empleado
             </Button>
 
-            {/* RESUMEN DE EMPLEADOS ASIGNADOS AL DÍA */}
+            {/* RESUMEN DE EMPLEADOS ASIGNADOS AL DÍA CON OPCIÓN DE EDITAR/ELIMINAR */}
             <Paper sx={{ p: 2, backgroundColor: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 2 }}>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', display: 'block', mb: 1, fontWeight: 700 }}>
                 PERSONAL DE TURNO ASIGNADO PARA EL DÍA:
               </Typography>
               {diaActualInfo.empleadosAsignados?.length > 0 ? (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {diaActualInfo.empleadosAsignados.map((emp) => (
-                    <Chip key={emp} label={emp} size="small" color="primary" variant="outlined" sx={{ fontWeight: 600 }} />
-                  ))}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {diaActualInfo.empleadosAsignados.map((item) => {
+                    const nombre = typeof item === 'string' ? item : item.nombre;
+                    const horario = typeof item === 'string' ? '09:00 - 17:00' : item.horario;
+
+                    return (
+                      <Box
+                        key={nombre}
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          p: 1,
+                          backgroundColor: 'rgba(255,255,255,0.03)',
+                          borderRadius: 1.5,
+                          border: '1px solid rgba(255,255,255,0.08)',
+                        }}
+                      >
+                        <Box>
+                          <Typography variant="body2" sx={{ color: 'white', fontWeight: 700 }}>
+                            {nombre}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: '#90caf9' }}>
+                            Turno: {horario} hs
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title="Modificar rango horario">
+                            <IconButton size="small" onClick={() => handleEditarDirecto(item)} sx={{ color: '#81c784' }}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Eliminar asignación del día">
+                            <IconButton size="small" onClick={() => handleDesasignar(item)} sx={{ color: '#ef5350' }}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </Box>
+                    );
+                  })}
                 </Box>
               ) : (
                 <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>
@@ -412,7 +486,7 @@ export const HabilitarFecha = () => {
         </Box>
       </Paper>
 
-      {/* POP-UP MOTIVO DESHABILITACIÓN (CUU 6.2) */}
+      {/* POP-UP MOTIVO DESHABILITACIÓN */}
       <Dialog
         open={modalDeshabilitarOpen}
         onClose={() => setModalDeshabilitarOpen(false)}
@@ -476,6 +550,14 @@ export const HabilitarFecha = () => {
           ASIGNAR EMPLEADO
         </DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          
+          {/* Advertencia del Camino Alternativo 1.a */}
+          {avisoHorarioExistente && (
+            <Alert severity="warning" sx={{ fontSize: '12px', borderRadius: 2 }}>
+              {avisoHorarioExistente}
+            </Alert>
+          )}
+
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             <Box>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>Fecha:</Typography>
@@ -487,10 +569,10 @@ export const HabilitarFecha = () => {
               <TextField fullWidth size="small" disabled value={`${horaDesde} - ${horaHasta} hs`} sx={{ '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#90caf9' } }} />
             </Box>
 
-            {/* RANGO HORARIO LABORAL DEL EMPLEADO (8hs / Medio tiempo) */}
+            {/* RANGO HORARIO LABORAL DEL EMPLEADO */}
             <Box>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 700 }}>
-                Jornada Laboral del Empleado:
+                {isModificandoHorario ? 'Modificar Rango Horario Asignado:' : 'Rango Horario a Asignar:'}
               </Typography>
               <Box sx={{ display: 'flex', gap: 1.5, mt: 0.5 }}>
                 <Box sx={{ flex: 1 }}>
@@ -515,7 +597,7 @@ export const HabilitarFecha = () => {
                 </Box>
               </Box>
               
-              {/* Presets rápidos de turnos saludables */}
+              {/* Presets */}
               <Box sx={{ display: 'flex', gap: 0.8, mt: 1, flexWrap: 'wrap' }}>
                 <Chip
                   label="Mañana (08:30 - 14:30 · 6 hs)"
@@ -542,11 +624,11 @@ export const HabilitarFecha = () => {
             </Box>
 
             <Box sx={{ mt: 0.5 }}>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 700 }}>Seleccionar Empleado:</Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 700 }}>Elija empleado...</Typography>
               <FormControl fullWidth size="small" sx={{ mt: 0.5 }}>
                 <Select
                   value={empleadoSeleccionado}
-                  onChange={(e) => setEmpleadoSeleccionado(e.target.value)}
+                  onChange={(e) => handleChangeEmpleadoSelect(e.target.value)}
                   sx={{ color: 'white', backgroundColor: 'rgba(255,255,255,0.05)' }}
                 >
                   {empleadosList.map((emp) => (
@@ -564,7 +646,7 @@ export const HabilitarFecha = () => {
             Volver
           </Button>
           <Button variant="contained" color="success" fullWidth onClick={handleConfirmarAsignar} sx={{ fontWeight: 800 }}>
-            Confirmar
+            {isModificandoHorario ? 'Modificar Horario' : 'Confirmar'}
           </Button>
         </DialogActions>
       </Dialog>

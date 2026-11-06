@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Alert,
   Box,
@@ -9,11 +9,17 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { mockStore } from "../../services/mockStore";
 
 export const CreateService = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const borderRadius = "10px";
+
+  // Si viene con estado de edición
+  const servicioAEditar = location.state?.servicio || null;
+  const isEditing = Boolean(servicioAEditar);
 
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -22,6 +28,16 @@ export const CreateService = () => {
   const [activo, setActivo] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  useEffect(() => {
+    if (servicioAEditar) {
+      setNombre(servicioAEditar.nombre || "");
+      setDescripcion(servicioAEditar.desc || "");
+      setPrecio(servicioAEditar.precio ? String(servicioAEditar.precio) : "");
+      setDuracion(servicioAEditar.duracion ? String(servicioAEditar.duracion) : "");
+      setActivo(servicioAEditar.estado === "Activo");
+    }
+  }, [servicioAEditar]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -33,7 +49,28 @@ export const CreateService = () => {
       return;
     }
 
-    setSuccessMessage("¡Servicio guardado con éxito! Redirigiendo...");
+    if (isEditing) {
+      // CUU 7.2: Modificar Servicio
+      mockStore.modificarServicio(servicioAEditar.id, {
+        nombre,
+        desc: descripcion,
+        precio,
+        duracion,
+        estado: activo ? "Activo" : "Inactivo",
+      });
+      setSuccessMessage("¡Servicio modificado con éxito! Redirigiendo...");
+    } else {
+      // CUU 7.1: Crear Servicio
+      mockStore.crearServicio({
+        nombre,
+        desc: descripcion,
+        precio,
+        duracion,
+        estado: activo ? "Activo" : "Inactivo",
+      });
+      setSuccessMessage("¡Servicio registrado con éxito! Redirigiendo...");
+    }
+
     setTimeout(() => {
       navigate("/servicios-dueno");
     }, 1000);
@@ -54,11 +91,11 @@ export const CreateService = () => {
         sx={{
           width: "100%",
           maxWidth: "540px",
-          p: { xs: 3, md: 5 },
+          p: { xs: 3, md: 4.5 },
           borderRadius: 3,
           display: "flex",
           flexDirection: "column",
-          gap: 3,
+          gap: 2.5,
         }}
       >
         {/* ENCABEZADO */}
@@ -67,13 +104,15 @@ export const CreateService = () => {
             variant="h5"
             sx={{ color: "white", fontWeight: 800, letterSpacing: "0.5px" }}
           >
-            NUEVO / EDITAR SERVICIO
+            {isEditing ? "Modificar Servicio" : "Nuevo Servicio"}
           </Typography>
           <Typography
             variant="body2"
             sx={{ color: "rgba(255, 255, 255, 0.6)", mt: 0.5 }}
           >
-            Completá los datos del servicio ofrecido en la barbería
+            {isEditing
+              ? "Actualizá la información, costo o duración del servicio ofrecido"
+              : "Completá los datos del nuevo servicio a incorporar al catálogo"}
           </Typography>
         </Box>
 
@@ -97,7 +136,7 @@ export const CreateService = () => {
 
           <TextField
             id="service-nombre"
-            label="Ingrese nombre aquí"
+            label="Nombre del Servicio"
             variant="outlined"
             size="small"
             fullWidth
@@ -106,11 +145,12 @@ export const CreateService = () => {
               setNombre(e.target.value);
               setErrorMessage("");
             }}
+            required
           />
 
           <TextField
             id="service-descripcion"
-            label="Ingrese descripción aquí"
+            label="Descripción del Servicio"
             variant="outlined"
             size="small"
             multiline
@@ -118,9 +158,10 @@ export const CreateService = () => {
             fullWidth
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
+            placeholder="Detalles sobre el procedimiento, productos utilizados, etc."
           />
 
-          {/* PRECIO Y DURACIÓN (LATERALES EN DESKTOP, VERTICALES EN MOBILE) */}
+          {/* PRECIO Y DURACIÓN */}
           <Box
             sx={{
               display: "flex",
@@ -130,7 +171,7 @@ export const CreateService = () => {
           >
             <TextField
               id="service-precio"
-              label="Ingrese precio aquí"
+              label="Precio ($ ARS)"
               type="number"
               variant="outlined"
               size="small"
@@ -140,11 +181,13 @@ export const CreateService = () => {
                 setPrecio(e.target.value);
                 setErrorMessage("");
               }}
+              required
             />
 
             <TextField
               id="service-duracion"
-              label="Ingrese duración"
+              label="Duración (minutos)"
+              type="number"
               variant="outlined"
               size="small"
               fullWidth
@@ -153,6 +196,7 @@ export const CreateService = () => {
                 setDuracion(e.target.value);
                 setErrorMessage("");
               }}
+              required
             />
           </Box>
 
@@ -170,7 +214,7 @@ export const CreateService = () => {
             }}
           >
             <Typography variant="body2" sx={{ color: "white", fontWeight: 600 }}>
-              Estado del servicio
+              Estado de disponibilidad
             </Typography>
             <FormControlLabel
               sx={{ m: 0 }}
@@ -232,7 +276,7 @@ export const CreateService = () => {
                 fontWeight: 800,
               }}
             >
-              Confirmar
+              {isEditing ? "Guardar Modificaciones" : "Registrar Servicio"}
             </Button>
           </Box>
         </Box>

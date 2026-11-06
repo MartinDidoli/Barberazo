@@ -698,7 +698,7 @@ export const mockStore = {
         horaDesde: isFinde ? '' : '08:00',
         horaHasta: isFinde ? '' : '21:00',
         motivoCancelacion: isFinde ? 'Fin de semana cerrado' : '',
-        empleadosAsignados: isFinde ? [] : ['Franco Barbero', 'Lucas Martino'],
+        empleadosAsignados: [], // Sin empleados asignados automáticamente por defecto para permitir flujo manual
       };
     }
 
@@ -757,18 +757,117 @@ export const mockStore = {
     return { success: true };
   },
 
-  asignarEmpleadoAFecha(dia, empleadoNombre, horaDesde, horaHasta) {
+  asignarEmpleadoAFecha(dia, empleadoNombre, rangoHorario) {
     const config = this.getFechasConfig();
     const diaObj = config[dia] || { dia: Number(dia), habilitado: true, empleadosAsignados: [] };
     const empleados = diaObj.empleadosAsignados || [];
-    if (!empleados.includes(empleadoNombre)) {
-      empleados.push(empleadoNombre);
+
+    // Formato de asignación: objeto con nombre y horario { nombre, horario }
+    const existeIndex = empleados.findIndex(e => (typeof e === 'string' ? e : e.nombre) === empleadoNombre);
+    const item = {
+      nombre: empleadoNombre,
+      horario: rangoHorario || '09:00 - 17:00',
+    };
+
+    let fueModificado = false;
+    if (existeIndex >= 0) {
+      empleados[existeIndex] = item;
+      fueModificado = true;
+    } else {
+      empleados.push(item);
     }
+
     diaObj.empleadosAsignados = empleados;
-    if (horaDesde) diaObj.horaDesde = horaDesde;
-    if (horaHasta) diaObj.horaHasta = horaHasta;
     config[dia] = diaObj;
     this.guardarFechasConfig(config);
+    return { success: true, fueModificado };
+  },
+
+  desasignarEmpleadoDeFecha(dia, empleadoNombre) {
+    const config = this.getFechasConfig();
+    const diaObj = config[dia];
+    if (!diaObj || !diaObj.empleadosAsignados) return { success: true };
+
+    diaObj.empleadosAsignados = diaObj.empleadosAsignados.filter(
+      e => (typeof e === 'string' ? e : e.nombre) !== empleadoNombre
+    );
+    config[dia] = diaObj;
+    this.guardarFechasConfig(config);
+    return { success: true };
+  },
+
+  // --- GESTIÓN DE SERVICIOS (CUU 7.1, 7.2) ---
+  getServiciosList() {
+    this.init();
+    const defaultServicios = [
+      { id: 1, nombre: 'Perfilado de Barba', desc: 'Perfilado y rebajado de volumen con navaja y toalla caliente', precio: 8000, duracion: 20, estado: 'Activo' },
+      { id: 2, nombre: 'Corte de Pelo', desc: 'Corte clásico o degradé a tijera y máquina con peinado incluido', precio: 12000, duracion: 30, estado: 'Activo' },
+      { id: 3, nombre: 'Diseño de Cejas', desc: 'Depilación y perfilado simétrico de cejas con navaja', precio: 5000, duracion: 15, estado: 'Activo' },
+      { id: 4, nombre: 'Lavado y Peinado', desc: 'Lavado profundo con shampoo premium y peinado con pomada', precio: 6000, duracion: 15, estado: 'Activo' },
+      { id: 5, nombre: 'Corte + Barba', desc: 'Servicio combo completo de corte de cabello y arreglo de barba', precio: 18000, duracion: 50, estado: 'Activo' },
+      { id: 6, nombre: 'Brashing Capilar', desc: 'Tratamiento capilar reconstructivo', precio: 11000, duracion: 30, estado: 'Inactivo' },
+    ];
+    try {
+      const raw = localStorage.getItem('barberazo_servicios_list');
+      if (!raw) {
+        localStorage.setItem('barberazo_servicios_list', JSON.stringify(defaultServicios));
+        return defaultServicios;
+      }
+      return JSON.parse(raw);
+    } catch {
+      return defaultServicios;
+    }
+  },
+
+  guardarServiciosList(servicios) {
+    localStorage.setItem('barberazo_servicios_list', JSON.stringify(servicios));
+  },
+
+  crearServicio({ nombre, desc, precio, duracion, estado }) {
+    this.init();
+    const servicios = this.getServiciosList();
+    const cleanNombre = (nombre || '').trim();
+    if (!cleanNombre || !precio || !duracion) {
+      return { error: 'Completá todos los campos requeridos.' };
+    }
+
+    const nuevoServicio = {
+      id: Date.now(),
+      nombre: cleanNombre,
+      desc: desc || '',
+      precio: Number(precio),
+      duracion: Number(duracion),
+      estado: estado || 'Activo',
+    };
+
+    const actualizados = [...servicios, nuevoServicio];
+    this.guardarServiciosList(actualizados);
+    return { success: true, servicio: nuevoServicio };
+  },
+
+  modificarServicio(id, { nombre, desc, precio, duracion, estado }) {
+    this.init();
+    const servicios = this.getServiciosList();
+    const cleanNombre = (nombre || '').trim();
+    if (!cleanNombre || !precio || !duracion) {
+      return { error: 'Completá todos los campos requeridos.' };
+    }
+
+    const actualizados = servicios.map(s => {
+      if (s.id === Number(id)) {
+        return {
+          ...s,
+          nombre: cleanNombre,
+          desc: desc || '',
+          precio: Number(precio),
+          duracion: Number(duracion),
+          estado: estado || 'Activo',
+        };
+      }
+      return s;
+    });
+
+    this.guardarServiciosList(actualizados);
     return { success: true };
   },
 
